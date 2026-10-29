@@ -1,0 +1,228 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TelltaleKube.App.ViewModels"
+             xmlns:c="using:TelltaleKube.App.Converters"
+             xmlns:ctl="using:TelltaleKube.App.Controls"
+             x:Class="TelltaleKube.App.Views.ResourceListView"
+             x:DataType="vm:ResourceListViewModel">
+  <UserControl.Resources>
+    <DataTemplate x:Key="ColumnHeader" x:DataType="vm:ListColumnViewModel">
+      <DockPanel Margin="0,0,6,0" ToolTip.Tip="{Binding Header}">
+        <TextBlock DockPanel.Dock="Right" Text="{Binding SortGlyph}" Classes="section" Margin="4,0,0,0" Foreground="{StaticResource KAccent}" />
+        <TextBlock Text="{Binding Header}" Classes="section" Margin="0" TextTrimming="CharacterEllipsis" />
+      </DockPanel>
+    </DataTemplate>
+    <!-- Pod container strip: ● main, ■ sidecar, ○ init, □ debug; colour = health. -->
+    <DataTemplate x:Key="ContainerChip" x:DataType="vm:ContainerChip">
+      <Panel Margin="0,0,3,0" Background="Transparent" VerticalAlignment="Center" ToolTip.Tip="{Binding Tooltip}">
+        <Ellipse Width="10" Height="10" IsVisible="{Binding IsMain}" Fill="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}" />
+        <Border Width="8" Height="8" CornerRadius="2" IsVisible="{Binding IsSidecar}" Background="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}" />
+        <Ellipse Width="8" Height="8" StrokeThickness="1.5" IsVisible="{Binding IsInit}" Stroke="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}" />
+        <Border Width="8" Height="8" CornerRadius="2" BorderThickness="1.5" IsVisible="{Binding IsEphemeral}" BorderBrush="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}" />
+      </Panel>
+    </DataTemplate>
+    <ItemsPanelTemplate x:Key="ChipPanel">
+      <StackPanel Orientation="Horizontal" />
+    </ItemsPanelTemplate>
+  </UserControl.Resources>
+
+  <UserControl.Styles>
+    <Style Selector="Button.colhead">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="0,4" />
+      <Setter Property="MinHeight" Value="0" />
+      <Setter Property="HorizontalAlignment" Value="Stretch" />
+      <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+      <Setter Property="Cursor" Value="Hand" />
+      <Setter Property="ContentTemplate" Value="{StaticResource ColumnHeader}" />
+    </Style>
+    <Style Selector="TextBox.colfilter">
+      <Setter Property="MinHeight" Value="28" />
+      <Setter Property="Padding" Value="6,3" />
+      <Setter Property="FontSize" Value="12" />
+      <Setter Property="Margin" Value="0,0,6,0" />
+    </Style>
+  </UserControl.Styles>
+
+  <DockPanel>
+    <StackPanel DockPanel.Dock="Top" Margin="12,10,12,6" Spacing="8">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <TextBlock Classes="h2" Text="{Binding Title}" VerticalAlignment="Center" />
+        <Border Classes="badge" VerticalAlignment="Center"><TextBlock Text="{Binding CountText}" FontSize="11" /></Border>
+      </StackPanel>
+      <!-- Wide: one row. Narrow (phone, or tablet with the detail pane open): filter box on its own row. -->
+      <Grid ColumnDefinitions="*,Auto,Auto,Auto" RowDefinitions="Auto,Auto" Classes.stacked="{Binding UseCompactRows}">
+        <Grid.Styles>
+          <!-- Positions live in styles only (local Grid.* values would override the stacked variant). -->
+          <Style Selector="Grid > ComboBox.healthbox">
+            <Setter Property="Grid.Column" Value="1" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+          </Style>
+          <Style Selector="Grid > Button.clearbtn">
+            <Setter Property="Grid.Column" Value="3" />
+            <Setter Property="Margin" Value="8,0,0,0" />
+          </Style>
+          <Style Selector="Grid.stacked > TextBox.filterbox">
+            <Setter Property="Grid.ColumnSpan" Value="4" />
+          </Style>
+          <Style Selector="Grid.stacked > ComboBox.healthbox">
+            <Setter Property="Grid.Row" Value="1" />
+            <Setter Property="Grid.Column" Value="0" />
+            <Setter Property="HorizontalAlignment" Value="Left" />
+            <Setter Property="Margin" Value="0,8,0,0" />
+          </Style>
+          <Style Selector="Grid.stacked > Button.clearbtn">
+            <Setter Property="Grid.Row" Value="1" />
+            <Setter Property="Grid.Column" Value="1" />
+            <Setter Property="Margin" Value="8,8,0,0" />
+          </Style>
+        </Grid.Styles>
+        <TextBox Classes="filterbox" Text="{Binding Filter}" PlaceholderText="Filter…  e.g. web status:Running restarts:&gt;3"
+                 ToolTip.Tip="{x:Static vm:ResourceListViewModel.FilterHelp}" />
+        <ComboBox Classes="healthbox" MinWidth="150" ItemsSource="{Binding HealthFilterOptions}" SelectedItem="{Binding HealthFilter}"
+                  ToolTip.Tip="Filter by health">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:HealthFilterOption">
+              <TextBlock Text="{Binding Label}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <ToggleButton Grid.Column="2" Margin="8,0,0,0" Content="Column filters" IsChecked="{Binding ShowColumnFilters}" IsVisible="{Binding !UseCompactRows}"
+                      ToolTip.Tip="Show a filter box under every column" />
+        <Button Classes="link clearbtn" Content="Clear" Command="{Binding ClearFiltersCommand}" IsVisible="{Binding HasActiveFilters}"
+                ToolTip.Tip="Clear all filters" />
+      </Grid>
+      <Grid ColumnDefinitions="Auto,*,Auto" IsVisible="{Binding UseCompactRows}">
+        <TextBlock Text="Sort by" Classes="muted" VerticalAlignment="Center" Margin="0,0,8,0" />
+        <ComboBox Grid.Column="1" HorizontalAlignment="Stretch" ItemsSource="{Binding SortOptions}" SelectedItem="{Binding SortColumn}"
+                  PlaceholderText="Namespace, name">
+          <ComboBox.ItemTemplate>
+            <DataTemplate x:DataType="vm:ListColumnViewModel">
+              <TextBlock Text="{Binding Header}" />
+            </DataTemplate>
+          </ComboBox.ItemTemplate>
+        </ComboBox>
+        <Button Grid.Column="2" Margin="8,0,0,0" Command="{Binding ToggleSortDirectionCommand}" ToolTip.Tip="Reverse order"
+                Content="{Binding SortColumn.SortGlyph, FallbackValue='↑'}" MinWidth="40" />
+      </Grid>
+    </StackPanel>
+
+    <TextBlock DockPanel.Dock="Top" Margin="12,0,12,6" Classes="muted" FontSize="11.5" Text="{Binding NodeStatsSource}"
+               IsVisible="{Binding NodeStatsSource, Converter={x:Static ObjectConverters.IsNotNull}}" />
+    <Border DockPanel.Dock="Top" Classes="error" Margin="12,0,12,8" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}">
+      <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+    </Border>
+
+    <Grid DockPanel.Dock="Top" ctl:GridLayout.Columns="{Binding ColumnLayout}" Margin="12,0,12,2" IsVisible="{Binding !UseCompactRows}">
+      <Button Grid.Column="0" Classes="colhead" Command="{Binding SortByCommand}" CommandParameter="{Binding HealthColumn}" ToolTip.Tip="Sort by health (failing first)">
+        <Button.ContentTemplate>
+          <DataTemplate x:DataType="vm:ListColumnViewModel">
+            <StackPanel Orientation="Horizontal">
+              <Ellipse Width="8" Height="8" Fill="{DynamicResource KMuted}" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding SortGlyph}" Classes="section" Margin="2,0,0,0" Foreground="{StaticResource KAccent}" />
+            </StackPanel>
+          </DataTemplate>
+        </Button.ContentTemplate>
+        <Button.Content><Binding Path="HealthColumn" /></Button.Content>
+      </Button>
+      <Button Grid.Column="1" Classes="colhead" Content="{Binding NameColumn}" Command="{Binding SortByCommand}" CommandParameter="{Binding NameColumn}" />
+      <Button Grid.Column="2" Classes="colhead" Content="{Binding NamespaceColumn}" Command="{Binding SortByCommand}" CommandParameter="{Binding NamespaceColumn}" IsVisible="{Binding NamespaceColumn.IsVisible}" />
+      <Button Grid.Column="3" Classes="colhead" Content="{Binding Col1}" Command="{Binding SortByCommand}" CommandParameter="{Binding Col1}" IsVisible="{Binding Col1.IsVisible}" />
+      <Button Grid.Column="4" Classes="colhead" Content="{Binding Col2}" Command="{Binding SortByCommand}" CommandParameter="{Binding Col2}" IsVisible="{Binding Col2.IsVisible}" />
+      <Button Grid.Column="5" Classes="colhead" Content="{Binding Col3}" Command="{Binding SortByCommand}" CommandParameter="{Binding Col3}" IsVisible="{Binding Col3.IsVisible}" />
+      <Button Grid.Column="6" Classes="colhead" Content="{Binding Col4}" Command="{Binding SortByCommand}" CommandParameter="{Binding Col4}" IsVisible="{Binding Col4.IsVisible}" />
+      <Button Grid.Column="7" Classes="colhead" Content="{Binding Col5}" Command="{Binding SortByCommand}" CommandParameter="{Binding Col5}" IsVisible="{Binding Col5.IsVisible}" />
+      <Button Grid.Column="8" Classes="colhead" Content="{Binding Col6}" Command="{Binding SortByCommand}" CommandParameter="{Binding Col6}" IsVisible="{Binding Col6.IsVisible}" />
+      <Button Grid.Column="9" Classes="colhead" Content="{Binding Col7}" Command="{Binding SortByCommand}" CommandParameter="{Binding Col7}" IsVisible="{Binding Col7.IsVisible}" />
+      <Button Grid.Column="10" Classes="colhead" Content="{Binding Col8}" Command="{Binding SortByCommand}" CommandParameter="{Binding Col8}" IsVisible="{Binding Col8.IsVisible}" />
+      <Button Grid.Column="11" Classes="colhead" Content="{Binding AgeColumn}" Command="{Binding SortByCommand}" CommandParameter="{Binding AgeColumn}" />
+    </Grid>
+
+    <Grid DockPanel.Dock="Top" ctl:GridLayout.Columns="{Binding ColumnLayout}" Margin="12,0,12,6">
+      <Grid.IsVisible>
+        <MultiBinding Converter="{x:Static BoolConverters.And}">
+          <Binding Path="ShowColumnFilters" />
+          <Binding Path="!UseCompactRows" />
+        </MultiBinding>
+      </Grid.IsVisible>
+      <TextBox Grid.Column="1" Classes="colfilter" Text="{Binding NameColumn.FilterText}" PlaceholderText="{Binding NameColumn.FilterPlaceholder}" />
+      <TextBox Grid.Column="2" Classes="colfilter" Text="{Binding NamespaceColumn.FilterText}" PlaceholderText="{Binding NamespaceColumn.FilterPlaceholder}" IsVisible="{Binding NamespaceColumn.IsFilterable}" />
+      <TextBox Grid.Column="3" Classes="colfilter" Text="{Binding Col1.FilterText}" PlaceholderText="{Binding Col1.FilterPlaceholder}" IsVisible="{Binding Col1.IsFilterable}" />
+      <TextBox Grid.Column="4" Classes="colfilter" Text="{Binding Col2.FilterText}" PlaceholderText="{Binding Col2.FilterPlaceholder}" IsVisible="{Binding Col2.IsFilterable}" />
+      <TextBox Grid.Column="5" Classes="colfilter" Text="{Binding Col3.FilterText}" PlaceholderText="{Binding Col3.FilterPlaceholder}" IsVisible="{Binding Col3.IsFilterable}" />
+      <TextBox Grid.Column="6" Classes="colfilter" Text="{Binding Col4.FilterText}" PlaceholderText="{Binding Col4.FilterPlaceholder}" IsVisible="{Binding Col4.IsFilterable}" />
+      <TextBox Grid.Column="7" Classes="colfilter" Text="{Binding Col5.FilterText}" PlaceholderText="{Binding Col5.FilterPlaceholder}" IsVisible="{Binding Col5.IsFilterable}" />
+      <TextBox Grid.Column="8" Classes="colfilter" Text="{Binding Col6.FilterText}" PlaceholderText="{Binding Col6.FilterPlaceholder}" IsVisible="{Binding Col6.IsFilterable}" />
+      <TextBox Grid.Column="9" Classes="colfilter" Text="{Binding Col7.FilterText}" PlaceholderText="{Binding Col7.FilterPlaceholder}" IsVisible="{Binding Col7.IsFilterable}" />
+      <TextBox Grid.Column="10" Classes="colfilter" Text="{Binding Col8.FilterText}" PlaceholderText="{Binding Col8.FilterPlaceholder}" IsVisible="{Binding Col8.IsFilterable}" />
+      <TextBox Grid.Column="11" Classes="colfilter" Text="{Binding AgeColumn.FilterText}" PlaceholderText="{Binding AgeColumn.FilterPlaceholder}" Margin="0" />
+    </Grid>
+
+    <Panel>
+      <ProgressBar IsIndeterminate="True" VerticalAlignment="Top" IsVisible="{Binding IsLoading}" Margin="12,0" />
+      <TextBlock Classes="muted" Margin="16" Text="No resources match the current filters." TextWrapping="Wrap">
+        <TextBlock.IsVisible>
+          <MultiBinding Converter="{x:Static BoolConverters.And}">
+            <Binding Path="HasActiveFilters" />
+            <Binding Path="!Shown" />
+          </MultiBinding>
+        </TextBlock.IsVisible>
+      </TextBlock>
+      <ListBox ItemsSource="{Binding Rows}" SelectedItem="{Binding Selected}" Background="Transparent">
+        <ListBox.ItemTemplate>
+          <DataTemplate x:DataType="vm:ResourceRowViewModel">
+            <Panel>
+              <Grid ctl:GridLayout.Columns="{Binding Owner.ColumnLayout}" IsVisible="{Binding !Owner.UseCompactRows}">
+                <Ellipse Width="8" Height="8" HorizontalAlignment="Left" Fill="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}" />
+                <Grid Grid.Column="1" ColumnDefinitions="*,Auto" Margin="0,0,8,0">
+                  <TextBlock Text="{Binding Name}" TextTrimming="CharacterEllipsis" />
+                  <ItemsControl Grid.Column="1" Margin="6,0,0,0" VerticalAlignment="Center" ItemsSource="{Binding Containers}" IsVisible="{Binding HasContainerStrip}"
+                                ItemTemplate="{StaticResource ContainerChip}" ItemsPanel="{StaticResource ChipPanel}" />
+                </Grid>
+                <TextBlock Grid.Column="2" Text="{Binding Namespace}" Classes="muted" TextTrimming="CharacterEllipsis" IsVisible="{Binding Owner.ShowNamespace}" />
+                <TextBlock Grid.Column="3" Text="{Binding C1}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" />
+                <TextBlock Grid.Column="4" Text="{Binding C2}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" />
+                <TextBlock Grid.Column="5" Text="{Binding C3}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" IsVisible="{Binding !NodeUsage.HasUsage, FallbackValue=True}" />
+                <TextBlock Grid.Column="6" Text="{Binding C4}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" IsVisible="{Binding !NodeUsage.HasUsage, FallbackValue=True}" />
+                <TextBlock Grid.Column="7" Text="{Binding C5}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" />
+                <TextBlock Grid.Column="8" Text="{Binding C6}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" />
+                <TextBlock Grid.Column="9" Text="{Binding C7}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" />
+                <TextBlock Grid.Column="10" Text="{Binding C8}" TextTrimming="CharacterEllipsis" Margin="0,0,6,0" />
+                <StackPanel Grid.Column="5" Margin="0,0,10,0" Spacing="2" VerticalAlignment="Center" IsVisible="{Binding NodeUsage.HasUsage, FallbackValue=False}" ToolTip.Tip="{Binding NodeUsage.CpuText}">
+                  <TextBlock Text="{Binding C3}" FontSize="12" />
+                  <ProgressBar Minimum="0" Maximum="100" Value="{Binding NodeUsage.CpuUsage}" Height="4" MinHeight="4" MinWidth="0" CornerRadius="2"
+                               Foreground="{Binding NodeUsage.CpuUsage, Converter={x:Static c:PercentToBrushConverter.Instance}}" />
+                </StackPanel>
+                <StackPanel Grid.Column="6" Margin="0,0,10,0" Spacing="2" VerticalAlignment="Center" IsVisible="{Binding NodeUsage.HasUsage, FallbackValue=False}" ToolTip.Tip="{Binding NodeUsage.MemText}">
+                  <TextBlock Text="{Binding C4}" FontSize="12" />
+                  <ProgressBar Minimum="0" Maximum="100" Value="{Binding NodeUsage.MemUsage}" Height="4" MinHeight="4" MinWidth="0" CornerRadius="2"
+                               Foreground="{Binding NodeUsage.MemUsage, Converter={x:Static c:PercentToBrushConverter.Instance}}" />
+                </StackPanel>
+                <TextBlock Grid.Column="11" Text="{Binding Age}" Classes="muted" />
+              </Grid>
+              <Grid ColumnDefinitions="16,*,Auto" RowDefinitions="Auto,Auto,Auto" IsVisible="{Binding Owner.UseCompactRows}" Margin="0,2">
+                <Ellipse Grid.RowSpan="2" Width="8" Height="8" HorizontalAlignment="Left" Fill="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}" />
+                <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                  <ItemsControl Grid.Column="1" Margin="8,0,0,0" VerticalAlignment="Center" ItemsSource="{Binding Containers}" IsVisible="{Binding HasContainerStrip}"
+                                ItemTemplate="{StaticResource ContainerChip}" ItemsPanel="{StaticResource ChipPanel}" />
+                </Grid>
+                <TextBlock Grid.Column="2" Text="{Binding Age}" Classes="muted" />
+                <TextBlock Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="1" Text="{Binding Summary}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" />
+                <Grid Grid.Column="1" Grid.ColumnSpan="2" Grid.Row="2" ColumnDefinitions="Auto,*,12,Auto,*" Margin="0,4,0,0" IsVisible="{Binding NodeUsage.HasUsage, FallbackValue=False}">
+                  <TextBlock Text="cpu " Classes="muted" FontSize="11" VerticalAlignment="Center" />
+                  <ProgressBar Grid.Column="1" Minimum="0" Maximum="100" Value="{Binding NodeUsage.CpuUsage}" Height="4" MinHeight="4" MinWidth="0" CornerRadius="2" VerticalAlignment="Center"
+                               Foreground="{Binding NodeUsage.CpuUsage, Converter={x:Static c:PercentToBrushConverter.Instance}}" />
+                  <TextBlock Grid.Column="3" Text="mem " Classes="muted" FontSize="11" VerticalAlignment="Center" />
+                  <ProgressBar Grid.Column="4" Minimum="0" Maximum="100" Value="{Binding NodeUsage.MemUsage}" Height="4" MinHeight="4" MinWidth="0" CornerRadius="2" VerticalAlignment="Center"
+                               Foreground="{Binding NodeUsage.MemUsage, Converter={x:Static c:PercentToBrushConverter.Instance}}" />
+                </Grid>
+              </Grid>
+            </Panel>
+          </DataTemplate>
+        </ListBox.ItemTemplate>
+      </ListBox>
+    </Panel>
+  </DockPanel>
+</UserControl>

@@ -1,0 +1,25 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TelltaleKube.App.ViewModels"
+             x:Class="TelltaleKube.App.Views.ShellView"
+             x:DataType="vm:ShellViewModel">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="10,8" BorderBrush="{DynamicResource KBorder}" BorderThickness="0,0,0,1">
+      <StackPanel Orientation="Horizontal" Spacing="8">
+        <ComboBox ItemsSource="{Binding Containers}" SelectedItem="{Binding SelectedContainer}" MinWidth="140" IsVisible="{Binding HasMultipleContainers}" />
+        <Button Content="Reconnect" Command="{Binding ConnectCommand}" />
+        <Button Content="Clear" Command="{Binding ClearCommand}" />
+        <Ellipse Width="8" Height="8" Fill="#2EAD6B" IsVisible="{Binding IsConnected}" VerticalAlignment="Center" />
+      </StackPanel>
+    </Border>
+    <Grid DockPanel.Dock="Bottom" ColumnDefinitions="*,Auto" Margin="8">
+      <TextBox x:Name="InputBox" Text="{Binding Input}" Classes="mono" PlaceholderText="Type a command and press Enter" KeyDown="OnInputKeyDown" />
+      <Button Grid.Column="1" Classes="primary" Margin="8,0,0,0" Content="Send" Command="{Binding SendCommand}" />
+    </Grid>
+    <Border Background="#0A0F18">
+      <ScrollViewer x:Name="OutputScroll" HorizontalScrollBarVisibility="Auto">
+        <SelectableTextBlock Text="{Binding Output}" Classes="mono" Foreground="#D6E2F0" Margin="10" />
+      </ScrollViewer>
+    </Border>
+  </DockPanel>
+</UserControl>

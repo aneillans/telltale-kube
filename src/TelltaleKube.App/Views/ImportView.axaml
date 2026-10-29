@@ -1,0 +1,38 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TelltaleKube.App.ViewModels"
+             x:Class="TelltaleKube.App.Views.ImportView"
+             x:DataType="vm:ImportViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="12" MaxWidth="900">
+      <TextBlock Classes="muted" TextWrapping="Wrap"
+                 Text="Paste a kubeconfig below. Only the contexts you select are stored, each with just its own cluster and credentials, encrypted on this device." />
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBlock Text="Kubeconfig YAML" Classes="h2" VerticalAlignment="Center" />
+        <Button Grid.Column="1" Command="{Binding PasteFromClipboardCommand}" Content="Paste from clipboard" />
+      </Grid>
+      <TextBox Text="{Binding Text}" AcceptsReturn="True" TextWrapping="NoWrap" Classes="mono" MinHeight="180" MaxHeight="320"
+               PlaceholderText="apiVersion: v1&#x0a;kind: Config&#x0a;clusters: ..." />
+      <Border Classes="error" IsVisible="{Binding Error, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <TextBlock Text="{Binding Error}" TextWrapping="Wrap" />
+      </Border>
+      <ItemsControl ItemsSource="{Binding Contexts}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate x:DataType="vm:ImportContextOption">
+            <Border Classes="card" Margin="0,0,0,8" Padding="10">
+              <CheckBox IsChecked="{Binding Selected}">
+                <StackPanel>
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <TextBlock Text="{Binding Server}" Classes="muted" FontSize="12" />
+                  <TextBlock Text="{Binding Auth}" FontSize="12" Foreground="{DynamicResource KMuted}" />
+                </StackPanel>
+              </CheckBox>
+            </Border>
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+      <CheckBox IsChecked="{Binding ReadOnly}" Content="Import as read-only (blocks delete, edit, scale, exec and port-forward)" />
+      <Button Classes="primary" HorizontalAlignment="Right" Command="{Binding ImportCommand}" Content="Import selected" />
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

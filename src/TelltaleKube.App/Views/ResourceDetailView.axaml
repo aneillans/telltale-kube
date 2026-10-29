@@ -1,0 +1,362 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TelltaleKube.App.ViewModels"
+             xmlns:c="using:TelltaleKube.App.Converters"
+             x:Class="TelltaleKube.App.Views.ResourceDetailView"
+             x:DataType="vm:ResourceDetailViewModel">
+  <DockPanel>
+    <Border DockPanel.Dock="Top" Padding="14,10" BorderBrush="{DynamicResource KBorder}" BorderThickness="0,0,0,1">
+      <StackPanel Spacing="8">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <Button Classes="link" Content="←" FontSize="16" VerticalAlignment="Top" Margin="0,0,6,0" ToolTip.Tip="Back"
+                  Command="{Binding Cluster.DetailBackCommand}" IsVisible="{Binding Cluster.HasDetailHistory}" />
+          <StackPanel Grid.Column="1">
+            <SelectableTextBlock Text="{Binding Name}" Classes="h2" TextWrapping="Wrap" />
+            <TextBlock Text="{Binding Subtitle}" Classes="muted" />
+          </StackPanel>
+          <Button Grid.Column="2" Classes="link" Content="✕" ToolTip.Tip="Close" VerticalAlignment="Top"
+                  Command="{Binding Cluster.CloseDetailCommand}" />
+        </Grid>
+        <WrapPanel IsVisible="{Binding HasOwnerChain}">
+          <TextBlock Text="Controlled by" Classes="muted" FontSize="12" VerticalAlignment="Center" Margin="0,0,6,0" />
+          <ItemsControl ItemsSource="{Binding OwnerChain}">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:OwnerLink">
+                <StackPanel Orientation="Horizontal">
+                  <TextBlock Text="›" Classes="muted" VerticalAlignment="Center" Margin="2,0" />
+                  <Button Classes="link" Padding="4,2" MinHeight="0" FontSize="12" IsEnabled="{Binding CanOpen}"
+                          Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).OpenOwnerCommand}" CommandParameter="{Binding}">
+                    <TextBlock>
+                      <Run Text="{Binding Kind, Mode=OneWay}" Foreground="{DynamicResource KMuted}" /><Run Text=" " /><Run Text="{Binding Name, Mode=OneWay}" Foreground="{StaticResource KAccent}" />
+                    </TextBlock>
+                  </Button>
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </WrapPanel>
+        <WrapPanel>
+          <WrapPanel.Styles>
+            <Style Selector="Button"><Setter Property="Margin" Value="0,0,6,6" /></Style>
+          </WrapPanel.Styles>
+          <Button Content="Logs" Command="{Binding OpenLogsCommand}" IsVisible="{Binding IsPod}" />
+          <Button Content="Latest run logs" Command="{Binding OpenLatestRunLogsCommand}" IsVisible="{Binding HasRuns}" />
+          <Button Content="Last failed run logs" Command="{Binding OpenLastFailedRunLogsCommand}" IsVisible="{Binding HasFailedRun}" />
+          <Button Content="Pod logs" Command="{Binding OpenLatestPodLogsCommand}" IsVisible="{Binding HasRelatedPods}"
+                  ToolTip.Tip="Logs of the running (or newest) pod" />
+          <Button Content="Run now" Command="{Binding RunNowCommand}" IsVisible="{Binding CanRunNow}" />
+          <Button Content="Suspend" Command="{Binding ToggleSuspendCommand}">
+            <Button.IsVisible>
+              <MultiBinding Converter="{x:Static BoolConverters.And}">
+                <Binding Path="CanSuspend" />
+                <Binding Path="!IsSuspended" />
+              </MultiBinding>
+            </Button.IsVisible>
+          </Button>
+          <Button Content="Resume" Command="{Binding ToggleSuspendCommand}">
+            <Button.IsVisible>
+              <MultiBinding Converter="{x:Static BoolConverters.And}">
+                <Binding Path="CanSuspend" />
+                <Binding Path="IsSuspended" />
+              </MultiBinding>
+            </Button.IsVisible>
+          </Button>
+          <Button Content="Shell" Command="{Binding OpenShellCommand}" IsVisible="{Binding CanExec}" />
+          <Button Content="Forward a port…" Command="{Binding PortForwardCommand}" IsVisible="{Binding CanPortForward}"
+                  ToolTip.Tip="Forward any pod port by number (declared ports have a Forward button under Ports)" />
+          <Button Content="Scale" Command="{Binding ScaleCommand}" IsVisible="{Binding CanScale}" />
+          <Button Content="Restart" Command="{Binding RestartCommand}" IsVisible="{Binding CanRestart}" />
+          <Button Content="Cordon / uncordon" Command="{Binding ToggleCordonCommand}" IsVisible="{Binding CanCordon}" />
+          <Button Content="Edit" Command="{Binding BeginEditCommand}" IsVisible="{Binding CanMutate}" />
+          <Button Content="Copy name" Command="{Binding CopyNameCommand}" />
+          <Button Content="Refresh" Command="{Binding RefreshCommand}" />
+          <Button Classes="danger" Content="Delete" Command="{Binding DeleteCommand}" IsVisible="{Binding CanMutate}" />
+        </WrapPanel>
+        <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
+      </StackPanel>
+    </Border>
+
+    <Panel>
+      <TabControl Padding="0" IsVisible="{Binding !IsEditing}">
+        <TabItem Header="Overview">
+          <ScrollViewer>
+            <StackPanel Margin="14" Spacing="14">
+              <Border Classes="banner" IsVisible="{Binding RelatedNote, Converter={x:Static ObjectConverters.IsNotNull}}">
+                <TextBlock Text="{Binding RelatedNote}" TextWrapping="Wrap" FontSize="12" />
+              </Border>
+
+              <StackPanel Spacing="6" IsVisible="{Binding HasRuns}">
+                <TextBlock Text="Runs" Classes="h2" />
+                <ItemsControl ItemsSource="{Binding Runs}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:JobRunRow">
+                      <Border Classes="card" Padding="10,8" Margin="0,0,0,6">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,10,0"
+                                   Fill="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}" />
+                          <StackPanel Grid.Column="1">
+                            <Button Classes="link" Padding="0" MinHeight="0" HorizontalAlignment="Left" ToolTip.Tip="Open this job"
+                                    Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).OpenRunCommand}" CommandParameter="{Binding}">
+                              <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            </Button>
+                            <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <Button Grid.Column="2" Content="Logs" MinHeight="30" Padding="10,2" VerticalAlignment="Center"
+                                  Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).OpenRunLogsCommand}" CommandParameter="{Binding}" />
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+
+              <StackPanel Spacing="6" IsVisible="{Binding HasRelatedPods}">
+                <TextBlock Text="{Binding PodsTitle}" Classes="h2" />
+                <ItemsControl ItemsSource="{Binding RelatedPods}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:RelatedPodRow">
+                      <Border Classes="card" Padding="10,8" Margin="0,0,0,6">
+                        <Grid ColumnDefinitions="Auto,*,Auto">
+                          <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,10,0"
+                                   Fill="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}" />
+                          <StackPanel Grid.Column="1">
+                            <Button Classes="link" Padding="0" MinHeight="0" HorizontalAlignment="Left" ToolTip.Tip="Open this pod"
+                                    Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).OpenRelatedPodCommand}" CommandParameter="{Binding}">
+                              <TextBlock Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                            </Button>
+                            <TextBlock Text="{Binding Detail}" Classes="muted" FontSize="12" TextWrapping="Wrap" />
+                          </StackPanel>
+                          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalAlignment="Center">
+                            <Button Content="Previous" MinHeight="30" Padding="10,2" IsVisible="{Binding HasPreviousLogs}" ToolTip.Tip="Logs from before the last restart"
+                                    Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).OpenRelatedPodPreviousLogsCommand}" CommandParameter="{Binding}" />
+                            <Button Content="Logs" MinHeight="30" Padding="10,2"
+                                    Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).OpenRelatedPodLogsCommand}" CommandParameter="{Binding}" />
+                          </StackPanel>
+                        </Grid>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+
+              <ItemsControl ItemsSource="{Binding Fields}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:DetailField">
+                    <Grid ColumnDefinitions="150,*" Margin="0,3">
+                      <TextBlock Text="{Binding Label}" Classes="muted" TextWrapping="Wrap" />
+                      <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                    </Grid>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+
+              <StackPanel Spacing="6" IsVisible="{Binding HasUsageFields}">
+                <TextBlock Text="Resources" Classes="h2" />
+                <ItemsControl ItemsSource="{Binding UsageFields}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DetailField">
+                      <Grid ColumnDefinitions="150,*" Margin="0,3">
+                        <TextBlock Text="{Binding Label}" Classes="muted" TextWrapping="Wrap" />
+                        <SelectableTextBlock Grid.Column="1" Text="{Binding Value}" TextWrapping="Wrap" />
+                      </Grid>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+
+              <StackPanel Spacing="6" IsVisible="{Binding HasPodPorts}">
+                <TextBlock Text="Ports" Classes="h2" />
+                <ItemsControl ItemsSource="{Binding PodPorts}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:PodPortRow">
+                      <Border Classes="card" Padding="10,8" Margin="0,0,0,6">
+                        <StackPanel Spacing="4">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding Label}" Classes="mono" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                            <Button Grid.Column="1" Content="Forward" MinHeight="30" Padding="12,2" Classes="primary"
+                                    ToolTip.Tip="Forward to 127.0.0.1 on this computer"
+                                    Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).ForwardPortCommand}" CommandParameter="{Binding}">
+                              <Button.IsVisible>
+                                <MultiBinding Converter="{x:Static BoolConverters.And}">
+                                  <Binding Path="IsNotForwarded" />
+                                  <Binding Path="IsTcp" />
+                                  <Binding Path="$parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).CanForwardPorts" />
+                                </MultiBinding>
+                              </Button.IsVisible>
+                            </Button>
+                          </Grid>
+                          <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsForwarded}">
+                            <Button Classes="link" Padding="0" MinHeight="0" HorizontalAlignment="Left" Cursor="Hand"
+                                    ToolTip.Tip="Open in your browser"
+                                    Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).OpenForwardCommand}" CommandParameter="{Binding}">
+                              <TextBlock Text="{Binding Forward.UrlText}" Foreground="{StaticResource KAccent}" TextDecorations="Underline" Classes="mono" />
+                            </Button>
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="6">
+                              <Button Content="Copy" MinHeight="28" Padding="10,2"
+                                      Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).CopyForwardUrlCommand}" CommandParameter="{Binding}" />
+                              <Button Content="Stop" MinHeight="28" Padding="10,2" Classes="danger"
+                                      Command="{Binding $parent[ItemsControl].((vm:ResourceDetailViewModel)DataContext).StopForwardCommand}" CommandParameter="{Binding}" />
+                            </StackPanel>
+                          </Grid>
+                          <TextBlock Text="{Binding Forward.LastError}" IsVisible="{Binding Forward.HasError, FallbackValue=False}"
+                                     Foreground="{StaticResource KDanger}" FontSize="12" TextWrapping="Wrap" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+
+              <StackPanel Spacing="6" IsVisible="{Binding HasContainers}">
+                <TextBlock Text="Containers" Classes="h2" />
+                <ItemsControl ItemsSource="{Binding Containers}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:ContainerCardViewModel">
+                      <Border Classes="card" Padding="10" Margin="0,0,0,6" BorderThickness="1"
+                              BorderBrush="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}">
+                        <StackPanel Spacing="3">
+                          <Grid ColumnDefinitions="Auto,*,Auto">
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,8,0"
+                                     Fill="{Binding Health, Converter={x:Static c:HealthToBrushConverter.Instance}}" />
+                            <SelectableTextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" TextWrapping="Wrap" />
+                            <Border Grid.Column="2" Classes="badge" VerticalAlignment="Center" Background="{StaticResource KAccent}" IsVisible="{Binding IsMain}">
+                              <TextBlock Text="{Binding Role}" FontSize="11" Foreground="White" />
+                            </Border>
+                            <Border Grid.Column="2" Classes="badge" VerticalAlignment="Center" IsVisible="{Binding !IsMain}">
+                              <TextBlock Text="{Binding Role}" FontSize="11" />
+                            </Border>
+                          </Grid>
+                          <SelectableTextBlock Text="{Binding Image}" Classes="mono muted" FontSize="11.5" TextWrapping="Wrap" />
+                          <TextBlock Classes="muted" FontSize="12">
+                            <Run Text="{Binding State, Mode=OneWay}" /><Run Text="   " /><Run Text="{Binding Restarts, Mode=OneWay}" />
+                          </TextBlock>
+                          <TextBlock Text="{Binding ResourcesText}" Classes="muted" FontSize="11.5" TextWrapping="Wrap" />
+                          <TextBlock Text="{Binding UsageText}" IsVisible="{Binding HasUsage}" FontSize="12" TextWrapping="Wrap" Foreground="{StaticResource KAccent}" />
+                          <TextBlock Text="{Binding LastExit}" IsVisible="{Binding HasLastExit}" FontSize="12" Foreground="{StaticResource KWarning}" TextWrapping="Wrap" />
+                          <WrapPanel Margin="0,4,0,0">
+                            <WrapPanel.Styles>
+                              <Style Selector="Button"><Setter Property="Margin" Value="0,0,6,0" /><Setter Property="MinHeight" Value="30" /><Setter Property="Padding" Value="10,2" /></Style>
+                            </WrapPanel.Styles>
+                            <Button Content="Logs" IsVisible="{Binding HasLogs}"
+                                    Command="{Binding Owner.OpenContainerLogsCommand}" CommandParameter="{Binding}" />
+                            <Button Content="Previous logs" IsVisible="{Binding HasPreviousLogs}" ToolTip.Tip="Logs from before the last restart"
+                                    Command="{Binding Owner.OpenPreviousLogsCommand}" CommandParameter="{Binding}" />
+                            <Button Content="Shell" IsVisible="{Binding CanExec}"
+                                    Command="{Binding Owner.OpenContainerShellCommand}" CommandParameter="{Binding}" />
+                          </WrapPanel>
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+
+              <StackPanel Spacing="6" IsVisible="{Binding Labels.Count}">
+                <TextBlock Text="Labels" Classes="h2" />
+                <ItemsControl ItemsSource="{Binding Labels}">
+                  <ItemsControl.ItemsPanel><ItemsPanelTemplate><WrapPanel /></ItemsPanelTemplate></ItemsControl.ItemsPanel>
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="x:String">
+                      <Border Classes="badge" Margin="0,0,6,6"><SelectableTextBlock Text="{Binding}" Classes="mono" FontSize="11.5" /></Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+
+              <StackPanel Spacing="6" IsVisible="{Binding HasData}">
+                <TextBlock Text="Data" Classes="h2" />
+                <ItemsControl ItemsSource="{Binding Data}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DataEntryViewModel">
+                      <Border Classes="card" Padding="10" Margin="0,0,0,6">
+                        <StackPanel Spacing="4">
+                          <Grid ColumnDefinitions="*,Auto">
+                            <TextBlock Text="{Binding Key}" FontWeight="SemiBold" Classes="mono" TextTrimming="CharacterEllipsis" />
+                            <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="4">
+                              <Button Classes="link" Content="Reveal" Command="{Binding ToggleRevealCommand}" IsVisible="{Binding IsSecret}" />
+                              <Button Classes="link" Content="Copy" Command="{Binding CopyCommand}" />
+                            </StackPanel>
+                          </Grid>
+                          <SelectableTextBlock Text="{Binding Display}" Classes="mono" TextWrapping="Wrap" MaxHeight="240" />
+                        </StackPanel>
+                      </Border>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+
+              <StackPanel Spacing="6" IsVisible="{Binding AnnotationList.Count}">
+                <TextBlock Text="Annotations" Classes="h2" />
+                <ItemsControl ItemsSource="{Binding AnnotationList}">
+                  <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="vm:DetailField">
+                      <StackPanel Margin="0,3">
+                        <TextBlock Text="{Binding Label}" Classes="muted mono" FontSize="11.5" TextWrapping="Wrap" />
+                        <SelectableTextBlock Text="{Binding Value}" TextWrapping="Wrap" />
+                      </StackPanel>
+                    </DataTemplate>
+                  </ItemsControl.ItemTemplate>
+                </ItemsControl>
+              </StackPanel>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+
+        <TabItem Header="YAML">
+          <DockPanel>
+            <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="6" Margin="10,8">
+              <Button Content="Copy" Command="{Binding CopyYamlCommand}" />
+              <Button Content="Reveal secret values" Command="{Binding RevealYamlCommand}" IsVisible="{Binding IsSecret}" />
+            </StackPanel>
+            <Border Background="{DynamicResource KCode}">
+              <ScrollViewer HorizontalScrollBarVisibility="Auto">
+                <SelectableTextBlock Text="{Binding Yaml}" Classes="mono" Margin="12" />
+              </ScrollViewer>
+            </Border>
+          </DockPanel>
+        </TabItem>
+
+        <TabItem Header="Events">
+          <ScrollViewer>
+            <StackPanel Margin="14">
+              <TextBlock Classes="muted" Text="No events." IsVisible="{Binding !Events.Count}" />
+              <ItemsControl ItemsSource="{Binding Events}">
+                <ItemsControl.ItemTemplate>
+                  <DataTemplate x:DataType="vm:EventRow">
+                    <StackPanel Margin="0,0,0,10">
+                      <Grid ColumnDefinitions="*,Auto">
+                        <TextBlock Text="{Binding Reason}" FontWeight="SemiBold" />
+                        <TextBlock Grid.Column="1" Text="{Binding Age}" Classes="muted" />
+                      </Grid>
+                      <SelectableTextBlock Text="{Binding Message}" TextWrapping="Wrap" Classes="muted" />
+                    </StackPanel>
+                  </DataTemplate>
+                </ItemsControl.ItemTemplate>
+              </ItemsControl>
+            </StackPanel>
+          </ScrollViewer>
+        </TabItem>
+      </TabControl>
+
+      <DockPanel IsVisible="{Binding IsEditing}">
+        <StackPanel DockPanel.Dock="Top" Spacing="8" Margin="10,8">
+          <Border Classes="banner" IsVisible="{Binding HasRemoteChanges}">
+            <TextBlock TextWrapping="Wrap" Text="This object changed on the server while you were editing. Saving will fail with a conflict; cancel and edit again to start from the latest version." />
+          </Border>
+          <Border Classes="error" IsVisible="{Binding EditError, Converter={x:Static ObjectConverters.IsNotNull}}">
+            <TextBlock Text="{Binding EditError}" TextWrapping="Wrap" />
+          </Border>
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Classes="primary" Content="Save" Command="{Binding SaveEditCommand}" />
+            <Button Content="Cancel" Command="{Binding CancelEditCommand}" />
+          </StackPanel>
+        </StackPanel>
+        <TextBox Text="{Binding EditText}" AcceptsReturn="True" AcceptsTab="True" TextWrapping="NoWrap" Classes="mono"
+                 Background="{DynamicResource KCode}" BorderThickness="0" CornerRadius="0" />
+      </DockPanel>
+    </Panel>
+  </DockPanel>
+</UserControl>

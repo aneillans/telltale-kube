@@ -1,0 +1,86 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TelltaleKube.App.ViewModels"
+             xmlns:sys="using:System"
+             x:Class="TelltaleKube.App.Views.SettingsView"
+             x:DataType="vm:SettingsViewModel">
+  <ScrollViewer>
+    <StackPanel Margin="16" Spacing="14" MaxWidth="760">
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="h2" Text="Appearance" />
+          <ComboBox ItemsSource="{Binding Themes}" SelectedItem="{Binding Theme}" MinWidth="180" />
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="h2" Text="Security" />
+          <Grid ColumnDefinitions="*,Auto">
+            <TextBlock Text="Lock after time in background (minutes, 0 = never)" VerticalAlignment="Center" TextWrapping="Wrap" />
+            <ComboBox Grid.Column="1" ItemsSource="{Binding LockOptions}" SelectedItem="{Binding AutoLockMinutes}" MinWidth="90" />
+          </Grid>
+          <CheckBox IsChecked="{Binding ReadOnlyByDefault}" Content="Import new clusters as read-only" />
+          <CheckBox IsChecked="{Binding AllowBasicAuth}" Content="Allow HTTP basic auth (deprecated, not recommended)" />
+          <CheckBox IsChecked="{Binding UseSystemKubeconfig}" Content="Show contexts from ~/.kube/config ($KUBECONFIG)" IsVisible="{Binding IsDesktop}" />
+          <Grid ColumnDefinitions="*,Auto" IsVisible="{Binding IsDesktop}">
+            <TextBlock VerticalAlignment="Center" TextWrapping="Wrap">
+              <Run Text="Approved credential plugins: " /><Run Text="{Binding ApprovedPluginCount, Mode=OneWay}" />
+            </TextBlock>
+            <Button Grid.Column="1" Content="Forget approvals" Command="{Binding ForgetPluginApprovalsCommand}" />
+          </Grid>
+          <TextBlock Classes="muted" TextWrapping="Wrap">
+            <Run Text="Key storage: " /><Run Text="{Binding KeyStorage, Mode=OneWay}" />
+          </TextBlock>
+          <Border Classes="banner" IsVisible="{Binding KeyStorageIsWeak}">
+            <TextBlock TextWrapping="Wrap" Text="No OS secret store is available. Install GNOME Keyring, KWallet or another Secret Service provider for hardware/OS-backed protection." />
+          </Border>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="h2" Text="Saved clusters" />
+          <TextBlock Classes="muted" Text="No saved clusters." IsVisible="{Binding !Clusters.Count}" />
+          <ItemsControl ItemsSource="{Binding Clusters}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:StoredClusterSettings">
+                <StackPanel Margin="0,0,0,10">
+                  <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                  <CheckBox IsChecked="{Binding ReadOnly}" Content="Read-only" />
+                  <CheckBox IsChecked="{Binding AllowInsecureTls}" Content="Allow insecure TLS (skip certificate verification)" />
+                </StackPanel>
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card" IsVisible="{Binding IsDesktop}">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="h2" Text="Updates" />
+          <CheckBox IsChecked="{Binding CheckForUpdates}" Content="Check for signed updates at startup" />
+          <StackPanel Orientation="Horizontal" Spacing="10">
+            <Button Content="Check now" Command="{Binding CheckUpdatesCommand}" />
+            <TextBlock Text="{Binding UpdateStatus}" VerticalAlignment="Center" Classes="muted" />
+          </StackPanel>
+        </StackPanel>
+      </Border>
+
+      <Border Classes="card">
+        <StackPanel Spacing="10">
+          <TextBlock Classes="h2" Text="About" />
+          <TextBlock>
+            <Run Text="Telltale Kube " /><Run Text="{Binding Version, Mode=OneWay}" /><Run Text=" · " /><Run Text="{Binding PlatformName, Mode=OneWay}" />
+          </TextBlock>
+          <TextBlock Classes="muted" TextWrapping="Wrap" Text="Thank you for using my app!" />
+        </StackPanel>
+      </Border>
+
+      <Grid ColumnDefinitions="Auto,*,Auto">
+        <Button Classes="danger" Content="Erase all data" Command="{Binding WipeAllCommand}" />
+        <Button Grid.Column="2" Classes="primary" Content="Save" Command="{Binding SaveCommand}" />
+      </Grid>
+    </StackPanel>
+  </ScrollViewer>
+</UserControl>

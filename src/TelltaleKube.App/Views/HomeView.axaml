@@ -1,0 +1,63 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TelltaleKube.App.ViewModels"
+             x:Class="TelltaleKube.App.Views.HomeView"
+             x:DataType="vm:HomeViewModel">
+  <DockPanel Margin="16">
+    <StackPanel DockPanel.Dock="Top" Spacing="12" Margin="0,0,0,12">
+      <Border Classes="banner" IsVisible="{Binding Banner, Converter={x:Static ObjectConverters.IsNotNull}}">
+        <TextBlock Text="{Binding Banner}" TextWrapping="Wrap" />
+      </Border>
+      <Grid ColumnDefinitions="*,Auto">
+        <TextBox PlaceholderText="Search clusters" Text="{Binding Filter}" />
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" Margin="8,0,0,0">
+          <Button Classes="primary" Command="{Binding ImportFileCommand}" Content="Import file" />
+          <Button Command="{Binding ImportPasteCommand}" Content="Paste" />
+          <Button Command="{Binding RefreshCommand}" ToolTip.Tip="Reload" Content="⟳" />
+        </StackPanel>
+      </Grid>
+    </StackPanel>
+
+    <Panel>
+      <StackPanel IsVisible="{Binding IsEmpty}" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12" MaxWidth="420">
+        <Image Source="/Assets/telltale-kube.png" Width="96" Height="96" />
+        <TextBlock Classes="h1" HorizontalAlignment="Center" Text="Welcome to Telltale Kube" />
+        <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
+                   Text="Import a kubeconfig to get started. Credentials are encrypted on this device with a key held by the operating system's secure store, and never leave it." />
+      </StackPanel>
+
+      <ScrollViewer>
+        <ItemsControl ItemsSource="{Binding FilteredClusters}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate x:DataType="vm:ClusterCardViewModel">
+              <Button Margin="0,0,12,12" Padding="0" Width="320" MinWidth="280" HorizontalContentAlignment="Stretch" Background="Transparent"
+                      Command="{Binding $parent[ItemsControl].((vm:HomeViewModel)DataContext).ConnectCommand}" CommandParameter="{Binding}">
+                <Border Classes="card">
+                  <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto">
+                    <Border Grid.RowSpan="3" Width="44" Height="44" CornerRadius="10" Background="{StaticResource KAccent}" VerticalAlignment="Top" Margin="0,0,12,0">
+                      <TextBlock Text="{Binding Initials}" Foreground="White" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Border>
+                    <TextBlock Grid.Column="1" Text="{Binding Name}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Grid.Column="1" Grid.Row="1" Text="{Binding Server}" Classes="muted" FontSize="12" TextTrimming="CharacterEllipsis" />
+                    <WrapPanel Grid.Column="1" Grid.Row="2" Margin="0,6,0,0">
+                      <Border Classes="badge" Margin="0,0,4,0"><TextBlock Text="{Binding SourceLabel}" FontSize="11" /></Border>
+                      <Border Classes="badge" Margin="0,0,4,0" IsVisible="{Binding IsReadOnly}"><TextBlock Text="read-only" FontSize="11" /></Border>
+                      <Border Classes="badge" Margin="0,0,4,0" IsVisible="{Binding UsesExec}"><TextBlock Text="exec auth" FontSize="11" /></Border>
+                      <Border Classes="badge" Margin="0,0,4,0" Background="#33E5484D" IsVisible="{Binding IsInsecure}"><TextBlock Text="insecure TLS" FontSize="11" /></Border>
+                    </WrapPanel>
+                    <Button Grid.Column="2" Classes="link danger" Content="✕" ToolTip.Tip="Remove" VerticalAlignment="Top"
+                            IsVisible="{Binding !IsFromSystem}"
+                            Command="{Binding $parent[ItemsControl].((vm:HomeViewModel)DataContext).RemoveCommand}" CommandParameter="{Binding}" />
+                  </Grid>
+                </Border>
+              </Button>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+      </ScrollViewer>
+    </Panel>
+  </DockPanel>
+</UserControl>

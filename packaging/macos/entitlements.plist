@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<!--
+  Hardened-runtime entitlements for the Developer ID build. Telltale Kube is NativeAOT compiled, so it needs no JIT,
+  unsigned-executable-memory or library-validation exceptions: the empty set is the strictest possible.
+-->
+<dict/>
+</plist>

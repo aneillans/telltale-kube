@@ -1,0 +1,39 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TelltaleKube.App.ViewModels"
+             x:Class="TelltaleKube.App.Views.PortForwardsView"
+             x:DataType="vm:PortForwardsViewModel">
+  <StackPanel Margin="16" Spacing="12">
+    <TextBlock Classes="h1" Text="Port forwards" />
+    <TextBlock Classes="muted" TextWrapping="Wrap"
+               Text="Forwards listen on 127.0.0.1 only and stop when you disconnect from the cluster. Start one from a pod's Ports section." />
+    <TextBlock Classes="muted" Text="No active port forwards." IsVisible="{Binding !Cluster.PortForwards.Count}" />
+    <ItemsControl ItemsSource="{Binding Cluster.PortForwards}">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:PortForwardItem">
+          <Border Classes="card" Margin="0,0,0,8">
+            <StackPanel Spacing="4">
+              <Grid ColumnDefinitions="*,Auto">
+                <Button Classes="link" Padding="0" MinHeight="0" HorizontalAlignment="Left" Cursor="Hand" ToolTip.Tip="Open in your browser"
+                        Command="{Binding $parent[ItemsControl].((vm:PortForwardsViewModel)DataContext).Cluster.OpenPortForwardCommand}" CommandParameter="{Binding}">
+                  <TextBlock Text="{Binding UrlText}" Foreground="{StaticResource KAccent}" TextDecorations="Underline" FontWeight="SemiBold" Classes="mono" />
+                </Button>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8">
+                  <Button Content="Copy" Command="{Binding $parent[ItemsControl].((vm:PortForwardsViewModel)DataContext).Cluster.CopyPortForwardUrlCommand}" CommandParameter="{Binding}" />
+                  <Button Classes="danger" Content="Stop" Command="{Binding $parent[ItemsControl].((vm:PortForwardsViewModel)DataContext).Cluster.StopPortForwardCommand}" CommandParameter="{Binding}" />
+                </StackPanel>
+              </Grid>
+              <Button Classes="link" Padding="0" MinHeight="0" HorizontalAlignment="Left" ToolTip.Tip="Show this pod"
+                      Command="{Binding $parent[ItemsControl].((vm:PortForwardsViewModel)DataContext).Cluster.ShowPortForwardPodCommand}" CommandParameter="{Binding}">
+                <TextBlock Classes="muted">
+                  <Run Text="→ " /><Run Text="{Binding Target, Mode=OneWay}" />
+                </TextBlock>
+              </Button>
+              <TextBlock Text="{Binding LastError}" IsVisible="{Binding HasError}" Foreground="{StaticResource KDanger}" FontSize="12" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+  </StackPanel>
+</UserControl>

@@ -1,0 +1,48 @@
+{
+  "kind": "CustomResourceDefinitionList",
+  "items": [
+    {
+      "spec": {
+        "group": "cert-manager.io",
+        "names": { "plural": "certificaterequests", "kind": "CertificateRequest" },
+        "scope": "Namespaced",
+        "versions": [
+          {
+            "name": "v1", "served": true, "storage": true,
+            "additionalPrinterColumns": [
+              { "jsonPath": ".status.conditions[?(@.type == \"Approved\")].status", "name": "Approved", "type": "string" },
+              { "jsonPath": ".status.conditions[?(@.type == \"Denied\")].status", "name": "Denied", "type": "string" },
+              { "jsonPath": ".status.conditions[?(@.type == \"Ready\")].status", "name": "Ready", "type": "string" },
+              { "jsonPath": ".spec.issuerRef.name", "name": "Issuer", "type": "string" },
+              { "jsonPath": ".spec.username", "name": "Requester", "type": "string" },
+              { "jsonPath": ".status.conditions[?(@.type == \"Ready\")].message", "name": "Status", "priority": 1, "type": "string" },
+              { "jsonPath": ".metadata.creationTimestamp", "name": "Age", "type": "date" }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "spec": {
+        "group": "longhorn.io",
+        "names": { "plural": "volumes", "kind": "Volume" },
+        "scope": "Namespaced",
+        "versions": [
+          { "name": "v1beta1", "served": true, "storage": false, "additionalPrinterColumns": [ { "jsonPath": ".status.state", "name": "Old", "type": "string" } ] },
+          {
+            "name": "v1beta2", "served": true, "storage": true,
+            "additionalPrinterColumns": [
+              { "jsonPath": ".spec.dataEngine", "name": "Data Engine", "type": "string" },
+              { "jsonPath": ".status.state", "name": "State", "type": "string" },
+              { "jsonPath": ".status.robustness", "name": "Robustness", "type": "string" },
+              { "jsonPath": ".status.conditions[?(@.type=='Scheduled')].status", "name": "Scheduled", "type": "string" },
+              { "jsonPath": ".spec.size", "name": "Size", "type": "string" },
+              { "jsonPath": ".status.currentNodeID", "name": "Node", "type": "string" },
+              { "jsonPath": ".metadata.creationTimestamp", "name": "Age", "type": "date" }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

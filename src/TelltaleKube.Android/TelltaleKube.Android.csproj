@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(TelltaleKubeTfm)-android</TargetFramework>
+    <!-- Android 11+: required for BiometricPrompt with device-credential fallback and scoped storage. -->
+    <SupportedOSPlatformVersion>30</SupportedOSPlatformVersion>
+    <RootNamespace>TelltaleKube.Android</RootNamespace>
+    <ApplicationId>uk.co.neillans.telltalekube</ApplicationId>
+    <ApplicationTitle>Telltale Kube</ApplicationTitle>
+    <!-- versionCode is a monotonically increasing integer supplied by CI (github.run_number). -->
+    <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">1</ApplicationVersion>
+    <ApplicationDisplayVersion>$(VersionPrefix)</ApplicationDisplayVersion>
+    <AndroidPackageFormat>apk</AndroidPackageFormat>
+    <AndroidUseAapt2>true</AndroidUseAapt2>
+    <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <!-- Play Store wants an App Bundle; sideload/F-Droid builds can override with -p:AndroidPackageFormat=apk. -->
+    <AndroidPackageFormat>aab</AndroidPackageFormat>
+    <TrimMode>full</TrimMode>
+    <AndroidLinkTool>r8</AndroidLinkTool>
+    <DebugSymbols>false</DebugSymbols>
+    <AndroidCreatePackagePerAbi>false</AndroidCreatePackagePerAbi>
+  </PropertyGroup>
+
+  <!-- .NET 11 runs Android on CoreCLR by default; profiled AOT only applies if Mono is selected explicitly. -->
+  <PropertyGroup Condition="'$(Configuration)' == 'Release' And '$(UseMonoRuntime)' == 'true'">
+    <RunAOTCompilation>true</RunAOTCompilation>
+    <AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
+  </PropertyGroup>
+
+  <!-- Release signing: values come from CI secrets (never committed). -->
+  <PropertyGroup Condition="'$(TELLTALE_KUBE_ANDROID_KEYSTORE)' != ''">
+    <AndroidKeyStore>true</AndroidKeyStore>
+    <AndroidSigningKeyStore>$(TELLTALE_KUBE_ANDROID_KEYSTORE)</AndroidSigningKeyStore>
+    <AndroidSigningKeyAlias>$(TELLTALE_KUBE_ANDROID_KEY_ALIAS)</AndroidSigningKeyAlias>
+    <AndroidSigningStorePass>env:TELLTALE_KUBE_ANDROID_STORE_PASS</AndroidSigningStorePass>
+    <AndroidSigningKeyPass>env:TELLTALE_KUBE_ANDROID_KEY_PASS</AndroidSigningKeyPass>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Android" />
+    <PackageReference Include="Xamarin.AndroidX.Core.SplashScreen" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TelltaleKube.App\TelltaleKube.App.csproj" />
+  </ItemGroup>
+</Project>

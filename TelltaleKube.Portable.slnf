@@ -1,0 +1,12 @@
+{
+  "solution": {
+    "path": "TelltaleKube.slnx",
+    "projects": [
+      "src/TelltaleKube.Core/TelltaleKube.Core.csproj",
+      "src/TelltaleKube.App/TelltaleKube.App.csproj",
+      "src/TelltaleKube.Desktop/TelltaleKube.Desktop.csproj",
+      "tests/TelltaleKube.Core.Tests/TelltaleKube.Core.Tests.csproj",
+      "tests/TelltaleKube.App.Tests/TelltaleKube.App.Tests.csproj"
+    ]
+  }
+}

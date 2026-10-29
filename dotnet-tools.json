@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "isRoot": true,
+  "tools": {
+    "vpk": {
+      "version": "1.2.161",
+      "commands": [
+        "vpk"
+      ],
+      "rollForward": false
+    },
+    "cyclonedx": {
+      "version": "6.3.1",
+      "commands": [
+        "dotnet-CycloneDX"
+      ],
+      "rollForward": false
+    }
+  }
+}

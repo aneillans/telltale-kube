@@ -1,0 +1,40 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>$(TelltaleKubeTfm)-ios</TargetFramework>
+    <SupportedOSPlatformVersion>16.0</SupportedOSPlatformVersion>
+    <RootNamespace>TelltaleKube.iOS</RootNamespace>
+    <ApplicationId>uk.co.neillans.telltalekube</ApplicationId>
+    <!-- Sets CFBundleDisplayName (the home-screen label); keep in sync with Info.plist. Full name stays in CFBundleName. -->
+    <ApplicationTitle>Telltale</ApplicationTitle>
+    <ApplicationDisplayVersion>$(VersionPrefix)</ApplicationDisplayVersion>
+    <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">1</ApplicationVersion>
+    <CodesignEntitlements>Entitlements.plist</CodesignEntitlements>
+    <!-- No lock file: the iOS workload only installs on macOS. Versions are still pinned
+         centrally, including transitive ones (Directory.Packages.props). -->
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
+    <RuntimeIdentifier>ios-arm64</RuntimeIdentifier>
+    <!-- iOS forbids JIT: full AOT, trimmed. -->
+    <MtouchLink>Full</MtouchLink>
+    <TrimMode>full</TrimMode>
+    <ArchiveOnBuild>true</ArchiveOnBuild>
+    <!-- Signing identity / profile are injected by CI. -->
+    <CodesignKey Condition="'$(CodesignKey)' == ''">Apple Distribution</CodesignKey>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ImageAsset Include="Assets.xcassets\**\*" />
+    <InterfaceDefinition Include="Resources\LaunchScreen.xib" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.iOS" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TelltaleKube.App\TelltaleKube.App.csproj" />
+  </ItemGroup>
+</Project>

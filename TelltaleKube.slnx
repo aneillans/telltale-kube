@@ -1,0 +1,19 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/TelltaleKube.Core/TelltaleKube.Core.csproj" />
+    <Project Path="src/TelltaleKube.App/TelltaleKube.App.csproj" />
+    <Project Path="src/TelltaleKube.Desktop/TelltaleKube.Desktop.csproj" />
+    <Project Path="src/TelltaleKube.Android/TelltaleKube.Android.csproj" />
+    <Project Path="src/TelltaleKube.iOS/TelltaleKube.iOS.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/TelltaleKube.Core.Tests/TelltaleKube.Core.Tests.csproj" />
+    <Project Path="tests/TelltaleKube.App.Tests/TelltaleKube.App.Tests.csproj" />
+  </Folder>
+  <Folder Name="/build/">
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="nuget.config" />
+  </Folder>
+</Solution>

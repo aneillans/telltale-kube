@@ -1,0 +1,35 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>$(TelltaleKubeTfm)</TargetFramework>
+    <RootNamespace>TelltaleKube.Desktop</RootNamespace>
+    <AssemblyName>TelltaleKube</AssemblyName>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>..\TelltaleKube.App\Assets\telltale-kube.ico</ApplicationIcon>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- Every shipped RID is listed so packages.lock.json covers all release builds (locked restore in CI). -->
+    <RuntimeIdentifiers>win-x64;win-arm64;osx-x64;osx-arm64;linux-x64;linux-arm64</RuntimeIdentifiers>
+
+    <!-- Lightweight by default: NativeAOT single native binary, no JIT, no ICU, trimmed. -->
+    <PublishAot>true</PublishAot>
+    <InvariantGlobalization>true</InvariantGlobalization>
+    <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <StackTraceSupport>false</StackTraceSupport>
+    <OptimizationPreference>Size</OptimizationPreference>
+    <IlcGenerateStackTraceData>false</IlcGenerateStackTraceData>
+    <EventSourceSupport>false</EventSourceSupport>
+    <DebuggerSupport>false</DebuggerSupport>
+    <TrimmerSingleWarn>false</TrimmerSingleWarn>
+    <!-- Hardening: Control-flow Enforcement Technology (shadow stack) on Windows. -->
+    <CETCompat>true</CETCompat>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" />
+    <PackageReference Include="Velopack" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TelltaleKube.App\TelltaleKube.App.csproj" />
+  </ItemGroup>
+</Project>

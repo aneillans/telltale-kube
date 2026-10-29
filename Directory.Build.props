@@ -1,0 +1,39 @@
+<Project>
+  <PropertyGroup>
+    <Product>Telltale Kube</Product>
+    <Company>Telltale Kube contributors</Company>
+    <Authors>Telltale Kube contributors</Authors>
+    <Copyright>Copyright © Telltale Kube contributors</Copyright>
+    <RepositoryUrl>https://github.com/aneillans/telltale-kube</RepositoryUrl>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+
+    <!-- Version is stamped by CI from the git tag (vX.Y.Z); this is the local default. -->
+    <VersionPrefix Condition="'$(VersionPrefix)' == ''">0.1.0</VersionPrefix>
+
+    <TelltaleKubeTfm>net11.0</TelltaleKubeTfm>
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
+    <Deterministic>true</Deterministic>
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <GenerateDocumentationFile>false</GenerateDocumentationFile>
+
+    <!-- Supply chain: lock files + vulnerability auditing of the full dependency graph. -->
+    <RestorePackagesWithLockFile>true</RestorePackagesWithLockFile>
+    <RestoreLockedMode Condition="'$(CI)' == 'true'">true</RestoreLockedMode>
+    <NuGetAudit>true</NuGetAudit>
+    <NuGetAuditMode>all</NuGetAuditMode>
+    <NuGetAuditLevel>low</NuGetAuditLevel>
+
+    <!-- No telemetry. -->
+    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+
+  <ItemGroup Condition="'$(CI)' == 'true'">
+    <!-- A vulnerable dependency fails CI. -->
+    <WarningsAsErrors Include="NU1901;NU1902;NU1903;NU1904" />
+  </ItemGroup>
+</Project>

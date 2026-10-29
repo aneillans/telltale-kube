@@ -1,0 +1,132 @@
+<Application xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TelltaleKube.App.ViewModels"
+             xmlns:views="using:TelltaleKube.App.Views"
+             x:Class="TelltaleKube.App.App"
+             Name="Telltale Kube"
+             RequestedThemeVariant="Default">
+
+  <!-- AOT/trim-safe view resolution: explicit view-model → view mapping (no reflection-based ViewLocator). -->
+  <Application.DataTemplates>
+    <DataTemplate DataType="vm:HomeViewModel"><views:HomeView /></DataTemplate>
+    <DataTemplate DataType="vm:ImportViewModel"><views:ImportView /></DataTemplate>
+    <DataTemplate DataType="vm:ClusterViewModel"><views:ClusterView /></DataTemplate>
+    <DataTemplate DataType="vm:OverviewViewModel"><views:OverviewView /></DataTemplate>
+    <DataTemplate DataType="vm:ResourceListViewModel"><views:ResourceListView /></DataTemplate>
+    <DataTemplate DataType="vm:ResourceDetailViewModel"><views:ResourceDetailView /></DataTemplate>
+    <DataTemplate DataType="vm:PortForwardsViewModel"><views:PortForwardsView /></DataTemplate>
+    <DataTemplate DataType="vm:LogsViewModel"><views:LogsView /></DataTemplate>
+    <DataTemplate DataType="vm:ShellViewModel"><views:ShellView /></DataTemplate>
+    <DataTemplate DataType="vm:SettingsViewModel"><views:SettingsView /></DataTemplate>
+  </Application.DataTemplates>
+
+  <Application.Resources>
+    <ResourceDictionary>
+      <ResourceDictionary.ThemeDictionaries>
+        <ResourceDictionary x:Key="Light">
+          <SolidColorBrush x:Key="KSurface" Color="#F6F8FB" />
+          <SolidColorBrush x:Key="KCard" Color="#FFFFFF" />
+          <SolidColorBrush x:Key="KSidebar" Color="#EEF2F7" />
+          <SolidColorBrush x:Key="KBorder" Color="#DDE3EC" />
+          <SolidColorBrush x:Key="KMuted" Color="#5B6577" />
+          <SolidColorBrush x:Key="KCode" Color="#F1F4F9" />
+        </ResourceDictionary>
+        <ResourceDictionary x:Key="Dark">
+          <SolidColorBrush x:Key="KSurface" Color="#0E1420" />
+          <SolidColorBrush x:Key="KCard" Color="#161E2D" />
+          <SolidColorBrush x:Key="KSidebar" Color="#111827" />
+          <SolidColorBrush x:Key="KBorder" Color="#263247" />
+          <SolidColorBrush x:Key="KMuted" Color="#93A0B5" />
+          <SolidColorBrush x:Key="KCode" Color="#0A0F18" />
+        </ResourceDictionary>
+      </ResourceDictionary.ThemeDictionaries>
+      <SolidColorBrush x:Key="KAccent" Color="#1FA99C" />
+      <SolidColorBrush x:Key="KDanger" Color="#E5484D" />
+      <SolidColorBrush x:Key="KWarning" Color="#E0A100" />
+      <FontFamily x:Key="KMono">Cascadia Mono, SF Mono, Menlo, Consolas, DejaVu Sans Mono, Roboto Mono, monospace</FontFamily>
+      <Color x:Key="SystemAccentColor">#1FA99C</Color>
+    </ResourceDictionary>
+  </Application.Resources>
+
+  <Application.Styles>
+    <FluentTheme />
+
+    <Style Selector=":is(TextBlock).h1">
+      <Setter Property="FontSize" Value="22" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector=":is(TextBlock).h2">
+      <Setter Property="FontSize" Value="16" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style Selector=":is(TextBlock).muted">
+      <Setter Property="Foreground" Value="{DynamicResource KMuted}" />
+    </Style>
+    <Style Selector=":is(TextBlock).section">
+      <Setter Property="FontSize" Value="11" />
+      <Setter Property="FontWeight" Value="SemiBold" />
+      <Setter Property="Foreground" Value="{DynamicResource KMuted}" />
+      <Setter Property="Margin" Value="12,14,12,4" />
+    </Style>
+    <Style Selector=":is(TextBlock).mono">
+      <Setter Property="FontFamily" Value="{StaticResource KMono}" />
+      <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <Style Selector="TextBox.mono">
+      <Setter Property="FontFamily" Value="{StaticResource KMono}" />
+      <Setter Property="FontSize" Value="12.5" />
+    </Style>
+    <!-- Fluent's ProgressBar has MinWidth 200, which overflows phone-width cards and cells. -->
+    <Style Selector="ProgressBar:horizontal">
+      <Setter Property="MinWidth" Value="0" />
+    </Style>
+    <Style Selector="Border.card">
+      <Setter Property="Background" Value="{DynamicResource KCard}" />
+      <Setter Property="BorderBrush" Value="{DynamicResource KBorder}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="10" />
+      <Setter Property="Padding" Value="14" />
+    </Style>
+    <Style Selector="Border.badge">
+      <Setter Property="CornerRadius" Value="4" />
+      <Setter Property="Padding" Value="5,1" />
+      <Setter Property="Background" Value="{DynamicResource KBorder}" />
+    </Style>
+    <Style Selector="Border.banner">
+      <Setter Property="Background" Value="#33E0A100" />
+      <Setter Property="BorderBrush" Value="{StaticResource KWarning}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="Border.error">
+      <Setter Property="Background" Value="#33E5484D" />
+      <Setter Property="BorderBrush" Value="{StaticResource KDanger}" />
+      <Setter Property="BorderThickness" Value="1" />
+      <Setter Property="CornerRadius" Value="8" />
+      <Setter Property="Padding" Value="12,8" />
+    </Style>
+    <Style Selector="Button.danger">
+      <Setter Property="Foreground" Value="{StaticResource KDanger}" />
+    </Style>
+    <Style Selector="Button.primary">
+      <Setter Property="Background" Value="{StaticResource KAccent}" />
+      <Setter Property="Foreground" Value="White" />
+    </Style>
+    <Style Selector="Button.link">
+      <Setter Property="Background" Value="Transparent" />
+      <Setter Property="BorderThickness" Value="0" />
+      <Setter Property="Padding" Value="6,4" />
+    </Style>
+    <!-- Comfortable touch targets on all platforms (≥ 40px). -->
+    <Style Selector="Button">
+      <Setter Property="MinHeight" Value="36" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
+    </Style>
+    <Style Selector="TabItem">
+      <Setter Property="FontSize" Value="15" />
+      <Setter Property="MinHeight" Value="40" />
+      <Setter Property="Padding" Value="12,0" />
+    </Style>
+  </Application.Styles>
+</Application>

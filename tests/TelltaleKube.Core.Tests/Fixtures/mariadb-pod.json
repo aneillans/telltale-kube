@@ -1,0 +1,35 @@
+{
+  "apiVersion": "v1",
+  "kind": "Pod",
+  "metadata": {
+    "name": "mariadb-1-0",
+    "generateName": "mariadb-1-",
+    "namespace": "default",
+    "uid": "bbde4c1d-7b8d-4787-a2af-cdbde8d9ec66",
+    "labels": {
+      "apps.kubernetes.io/pod-index": "0",
+      "io.kompose.service": "mariadb-1",
+      "statefulset.kubernetes.io/pod-name": "mariadb-1-0"
+    },
+    "ownerReferences": [{ "apiVersion": "apps/v1", "kind": "StatefulSet", "name": "mariadb-1", "controller": true }]
+  },
+  "spec": {
+    "containers": [
+      { "name": "mariadb-1", "image": "mariadb:12.3", "ports": [{ "containerPort": 3306 }] },
+      { "name": "mariadb-1-healthcheck", "image": "alpine:3.24" },
+      { "name": "fluent-bit", "image": "fluent/fluent-bit:5.1.5" },
+      { "name": "slow-log-rotate", "image": "mariadb:12.3" }
+    ],
+    "nodeName": "k3s-node2"
+  },
+  "status": {
+    "phase": "Running",
+    "podIP": "10.42.0.115",
+    "containerStatuses": [
+      { "name": "fluent-bit", "state": { "running": { "startedAt": "2026-10-21T16:30:15Z" } }, "lastState": {}, "ready": true, "restartCount": 0 },
+      { "name": "mariadb-1", "state": { "running": { "startedAt": "2026-10-21T16:30:12Z" } }, "lastState": {}, "ready": true, "restartCount": 0 },
+      { "name": "mariadb-1-healthcheck", "state": { "running": { "startedAt": "2026-10-21T16:30:12Z" } }, "lastState": {}, "ready": true, "restartCount": 0 },
+      { "name": "slow-log-rotate", "state": { "running": { "startedAt": "2026-10-21T16:30:15Z" } }, "lastState": {}, "ready": true, "restartCount": 0 }
+    ]
+  }
+}

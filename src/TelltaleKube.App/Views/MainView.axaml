@@ -1,0 +1,77 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:TelltaleKube.App.ViewModels"
+             x:Class="TelltaleKube.App.Views.MainView"
+             x:DataType="vm:MainViewModel"
+             Background="{DynamicResource KSurface}">
+  <Panel>
+    <DockPanel>
+      <Border DockPanel.Dock="Top" Background="{DynamicResource KCard}" BorderBrush="{DynamicResource KBorder}" BorderThickness="0,0,0,1" Padding="8,6">
+        <Grid ColumnDefinitions="Auto,*,Auto">
+          <StackPanel Orientation="Horizontal" Spacing="6">
+            <Button Classes="link" Command="{Binding GoBackCommand}" IsVisible="{Binding CanGoBack}" ToolTip.Tip="Back" FontSize="18" Content="←" />
+            <Image Source="/Assets/telltale-kube.png" Width="26" Height="26" Margin="4,0" IsVisible="{Binding !CanGoBack}" />
+          </StackPanel>
+          <TextBlock Grid.Column="1" Text="{Binding CurrentPage.Title}" Classes="h2" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" Margin="6,0" />
+          <Button Grid.Column="2" Classes="link" Command="{Binding OpenSettingsCommand}" ToolTip.Tip="Settings" Content="Settings" />
+        </Grid>
+      </Border>
+      <ContentControl Content="{Binding CurrentPage}" />
+    </DockPanel>
+
+    <ItemsControl ItemsSource="{Binding Toasts}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="16,0,16,24">
+      <ItemsControl.ItemTemplate>
+        <DataTemplate x:DataType="vm:ToastMessage">
+          <Border Classes="card" Padding="14,10" Margin="0,4" MaxWidth="520" Classes.error="{Binding IsError}" BoxShadow="0 4 16 0 #40000000">
+            <TextBlock Text="{Binding Text}" TextWrapping="Wrap" />
+          </Border>
+        </DataTemplate>
+      </ItemsControl.ItemTemplate>
+    </ItemsControl>
+
+    <Border Background="#99000000" IsVisible="{Binding HasDialog}" PointerPressed="OnScrimPressed">
+      <Border Classes="card" MaxWidth="560" Margin="20" Padding="20" HorizontalAlignment="Center" VerticalAlignment="Center"
+              DataContext="{Binding Dialog}" x:DataType="vm:DialogViewModel" BoxShadow="0 10 40 0 #60000000" PointerPressed="OnDialogPressed">
+        <StackPanel Spacing="12">
+          <TextBlock Text="{Binding Title}" Classes="h2" />
+          <TextBlock Text="{Binding Message}" TextWrapping="Wrap" />
+          <Border Background="{DynamicResource KCode}" CornerRadius="6" Padding="10" IsVisible="{Binding HasDetail}">
+            <ScrollViewer MaxHeight="220" HorizontalScrollBarVisibility="Auto">
+              <SelectableTextBlock Text="{Binding Detail}" Classes="mono" />
+            </ScrollViewer>
+          </Border>
+          <StackPanel Spacing="4" IsVisible="{Binding HasInput}">
+            <TextBlock Text="{Binding InputLabel}" Classes="muted" />
+            <TextBox Text="{Binding InputText}" />
+          </StackPanel>
+          <StackPanel Spacing="4" IsVisible="{Binding HasTypeToConfirm}">
+            <TextBlock Text="{Binding TypeToConfirmPrompt}" Classes="muted" />
+            <TextBox Text="{Binding TypedText}" />
+          </StackPanel>
+          <ItemsControl ItemsSource="{Binding Buttons}" HorizontalAlignment="Right">
+            <ItemsControl.ItemsPanel>
+              <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+              <DataTemplate x:DataType="vm:DialogButton">
+                <Button Content="{Binding Text}" Margin="6,0,0,0"
+                        Classes.primary="{Binding IsPrimary}" Classes.danger="{Binding IsDestructive}"
+                        Command="{Binding $parent[ItemsControl].((vm:DialogViewModel)DataContext).ChooseCommand}"
+                        CommandParameter="{Binding}" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </StackPanel>
+      </Border>
+    </Border>
+
+    <!-- Privacy / lock screen: hides cluster data in the app switcher and after inactivity -->
+    <Border Background="{DynamicResource KSurface}" IsVisible="{Binding IsPrivacyScreen}">
+      <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="16">
+        <Image Source="/Assets/telltale-kube.png" Width="96" Height="96" />
+        <TextBlock Text="Telltale Kube is locked" Classes="h2" HorizontalAlignment="Center" IsVisible="{Binding IsLocked}" />
+        <Button Classes="primary" HorizontalAlignment="Center" Command="{Binding UnlockCommand}" IsVisible="{Binding IsLocked}" Content="Unlock" />
+      </StackPanel>
+    </Border>
+  </Panel>
+</UserControl>
