@@ -1,0 +1,9 @@
+root = true
+
+[*.cs]
+# Public members are XAML binding targets; compiled bindings need them to stay instance members.
+dotnet_code_quality.CA1822.api_surface = private, internal
+
+[tests/**.cs]
+# Test names use underscores for readability.
+dotnet_diagnostic.CA1707.severity = none
