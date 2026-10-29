@@ -1,0 +1,62 @@
+# Android: build the APK (arm64 + x64) as a workflow artifact.
+name: Android
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: android-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  apk:
+    name: Build APK
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: step-security/harden-runner@v2.22.3
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          
+      - uses: android-actions/setup-android@v4.0.4
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: src/TelltaleKube.Android/packages.lock.json
+          
+      - run: dotnet workload install android
+      - run: dotnet restore src/TelltaleKube.Android
+      - name: Publish APK
+        run: >
+          dotnet publish src/TelltaleKube.Android -c Release --no-restore
+          -p:AndroidPackageFormat=apk -p:ApplicationVersion=${{ github.run_number }} -o out
+          
+      - name: Package
+        run: |
+          mkdir -p dist
+          cp out/*-Signed.apk dist/telltale-kube-android.apk
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: android-apk
+          path: dist/
+          if-no-files-found: error

@@ -1,0 +1,101 @@
+# Linux: build, test and publish NativeAOT binaries (x64 + arm64) as workflow artifacts.
+name: Linux
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CI: true
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  NUGET_PACKAGES: ${{ github.workspace }}/.nuget/packages
+
+jobs:
+  test:
+    name: Build & test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: step-security/harden-runner@v2.22.3
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: '**/packages.lock.json'
+      - name: Restore
+        run: dotnet restore TelltaleKube.Portable.slnf
+      - name: Build (warnings as errors)
+        run: dotnet build TelltaleKube.Portable.slnf --no-restore -c Release
+      - name: Format check
+        run: dotnet format TelltaleKube.Portable.slnf --no-restore --verify-no-changes --severity warn
+      - name: Core tests
+        run: dotnet test --project tests/TelltaleKube.Core.Tests --no-build -c Release
+      - name: UI tests (headless, renders screenshots)
+        run: dotnet test --project tests/TelltaleKube.App.Tests --no-build -c Release
+      - name: Upload UI screenshots
+        if: always()
+        uses: actions/upload-artifact@v7.0.2
+        with:
+          name: ui-screenshots
+          path: tests/TelltaleKube.App.Tests/bin/Release/net11.0/screenshots/
+          if-no-files-found: ignore
+      - name: Vulnerable dependency audit
+        run: |
+          dotnet list TelltaleKube.Portable.slnf package --vulnerable --include-transitive 2>&1 | tee audit.txt
+          if grep -q "has the following vulnerable packages" audit.txt; then echo "::error::Vulnerable packages found"; exit 1; fi
+
+  publish:
+    needs: test
+    name: Publish ${{ matrix.rid }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { rid: linux-x64,   os: ubuntu-24.04 }
+          - { rid: linux-arm64, os: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: step-security/harden-runner@v2.22.3
+        with:
+          egress-policy: audit
+      - uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-dotnet@v6.0.0
+        with:
+          global-json-file: global.json
+          cache: true
+          cache-dependency-path: src/TelltaleKube.Desktop/packages.lock.json
+      - run: dotnet restore src/TelltaleKube.Desktop
+        
+      - name: Publish 
+        run: dotnet publish src/TelltaleKube.Desktop -c Release -r ${{ matrix.rid }} --no-restore -o publish
+      - name: Size check
+        run: |
+          size=$(du -sb --exclude='*.dbg' --exclude='*.pdb' publish | cut -f1)
+          echo "Shipped size: $((size / 1024 / 1024)) MiB"
+          test "$size" -lt $((60 * 1024 * 1024))
+      - name: Package tar
+        run: |
+          mkdir -p out
+          tar -C publish --exclude='*.dbg' --exclude='*.pdb' -czf "out/telltale-kube-${{ matrix.rid }}.tar.gz" .
+      - uses: actions/upload-artifact@v7.0.2
+        with:
+          name: ${{ matrix.rid }}
+          path: out/
+          if-no-files-found: error
