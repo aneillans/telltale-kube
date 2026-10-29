@@ -63,7 +63,7 @@ public sealed record TopPodRow(PodUsage Pod, string Value, string Detail, double
 /// Cluster dashboard: health tiles, resource utilisation (no Prometheus needed: requests/limits always,
 /// live usage from metrics-server or the kubelet), per-node breakdown, top consumers and recent warnings.
 /// </summary>
-public sealed partial class OverviewViewModel(ClusterViewModel cluster) : ViewModelBase
+public sealed partial class OverviewViewModel(ClusterViewModel cluster) : ViewModelBase, IDisposable
 {
     private const int HistorySize = 40;
     public static readonly TimeSpan RefreshInterval = TimeSpan.FromSeconds(15);
@@ -288,6 +288,8 @@ public sealed partial class OverviewViewModel(ClusterViewModel cluster) : ViewMo
         _refresh?.Dispose();
         _refresh = null;
     }
+
+    public void Dispose() => StopAutoRefresh();
 
     /// <summary>A forbidden list (RBAC) just hides that tile instead of failing the whole dashboard.</summary>
     private static async Task<ResourceList?> Try(Func<Task<ResourceList>> f)

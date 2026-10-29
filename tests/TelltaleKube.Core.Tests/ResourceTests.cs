@@ -103,7 +103,7 @@ public class ResourceTests
         var bomb = new System.Text.StringBuilder("a: &a [\"lol\",\"lol\",\"lol\",\"lol\",\"lol\",\"lol\",\"lol\",\"lol\",\"lol\"]\n");
         for (var i = 1; i < 10; i++)
         {
-            bomb.Append($"{(char)('a' + i)}: &{(char)('a' + i)} [*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)}]\n");
+            bomb.Append(System.Globalization.CultureInfo.InvariantCulture, $"{(char)('a' + i)}: &{(char)('a' + i)} [*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)},*{(char)('a' + i - 1)}]\n");
         }
         Assert.Throws<FormatException>(() => YamlJson.FromYaml(bomb.ToString()));
     }

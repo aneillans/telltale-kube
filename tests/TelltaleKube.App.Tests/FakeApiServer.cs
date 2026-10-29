@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -265,7 +266,7 @@ public sealed class FakeApiServer : IDisposable
             ["state"] = new JsonObject { ["running"] = new JsonObject { ["startedAt"] = "2026-10-21T16:30:15Z" } },
             ["lastState"] = last ?? new JsonObject(),
         };
-        var oom = new JsonObject { ["terminated"] = new JsonObject { ["reason"] = "OOMKilled", ["exitCode"] = 137, ["finishedAt"] = DateTimeOffset.UtcNow.AddMinutes(-7).ToString("yyyy-MM-ddTHH:mm:ssZ") } };
+        var oom = new JsonObject { ["terminated"] = new JsonObject { ["reason"] = "OOMKilled", ["exitCode"] = 137, ["finishedAt"] = DateTimeOffset.UtcNow.AddMinutes(-7).ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture) } };
         return new JsonObject
         {
             ["metadata"] = meta,
@@ -319,7 +320,7 @@ public sealed class FakeApiServer : IDisposable
         ["namespace"] = ns,
         ["uid"] = Guid.NewGuid().ToString(),
         ["resourceVersion"] = "1",
-        ["creationTimestamp"] = DateTimeOffset.UtcNow.AddHours(-5).ToString("yyyy-MM-ddTHH:mm:ssZ"),
+        ["creationTimestamp"] = DateTimeOffset.UtcNow.AddHours(-5).ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
         ["labels"] = new JsonObject { ["app"] = name.Split('-')[0] },
     };
 
@@ -390,7 +391,7 @@ public sealed class FakeApiServer : IDisposable
         ["type"] = "Warning",
         ["reason"] = reason,
         ["message"] = message,
-        ["lastTimestamp"] = DateTimeOffset.UtcNow.AddMinutes(-3).ToString("yyyy-MM-ddTHH:mm:ssZ"),
+        ["lastTimestamp"] = DateTimeOffset.UtcNow.AddMinutes(-3).ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture),
         ["involvedObject"] = new JsonObject { ["kind"] = "Pod", ["name"] = "worker-5d8b9-klmno" },
     };
 

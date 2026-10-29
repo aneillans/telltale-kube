@@ -45,10 +45,9 @@ jobs:
           cache-dependency-path: src/TelltaleKube.Android/packages.lock.json
           
       - run: dotnet workload install android
-      - run: dotnet restore src/TelltaleKube.Android
       - name: Publish APK
         run: >
-          dotnet publish src/TelltaleKube.Android -c Release --no-restore
+          dotnet publish src/TelltaleKube.Android -c Release
           -p:AndroidPackageFormat=apk -p:ApplicationVersion=${{ github.run_number }} -o out
           
       - name: Package

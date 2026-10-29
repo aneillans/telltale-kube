@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json.Nodes;
 
 namespace TelltaleKube.App.Tests;
@@ -169,5 +170,5 @@ internal sealed class BatchNamespace
         list.Add(obj);
     }
 
-    private static string Ts(DateTimeOffset t) => t.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ");
+    private static string Ts(DateTimeOffset t) => t.ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", CultureInfo.InvariantCulture);
 }
