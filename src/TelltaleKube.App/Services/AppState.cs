@@ -11,12 +11,19 @@ public sealed record ClusterEntry(string Id, string DisplayName, string ContextN
     public string? DefaultNamespace => Stored?.DefaultNamespace ?? Config.FindContext(ContextName)?.Namespace;
     public bool UsesExecPlugin => Config.Resolve(ContextName).User.Exec is not null;
     public bool InsecureTls => Config.Resolve(ContextName).Cluster.InsecureSkipTlsVerify;
+
+    /// <summary>The built-in sample cluster. It lives in memory only and is never saved to the vault.</summary>
+    public static ClusterEntry CreateDemo() => new(
+        "demo", "Demo cluster", "demo", "Sample data on this device", ClusterSource.Demo,
+        new StoredCluster { DisplayName = "Demo cluster", ContextName = "demo", ReadOnly = true, DefaultNamespace = "shop" },
+        new Kubeconfig());
 }
 
 public enum ClusterSource
 {
     Vault,
     SystemKubeconfig,
+    Demo,
 }
 
 public sealed class AppState

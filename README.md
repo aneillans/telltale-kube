@@ -22,6 +22,8 @@ More screenshots can be found here if you are interested: [docs/SCREENSHOTS.md](
 ### Clusters and resources
 - Import kubeconfigs from a file or the clipboard and pick which contexts to keep. On desktop, `~/.kube/config` and
   `$KUBECONFIG` are also read live. You can also import from your Google Drive etc!
+- No cluster to hand? Try the read-only demo cluster from the empty home screen. It runs on built-in sample data and
+  makes no network calls.
 - Live list + watch views for every built-in kind (workloads, networking, config, storage, RBAC) and for CRDs.
 - Custom resources are discovered automatically and grouped by product in the sidebar (Longhorn, Flux,
   cert-manager, Gateway API and so on).

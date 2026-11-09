@@ -45,6 +45,9 @@ public sealed class KubeClient : IDisposable
         _http = new HttpClient(new InvokerHandler(_invoker), disposeHandler: false) { BaseAddress = baseUri, Timeout = Timeout.InfiniteTimeSpan };
     }
 
+    /// <summary>A read-only client over built-in sample data. It makes no network calls.</summary>
+    public static KubeClient CreateDemo() => new(new Demo.DemoHandler(), Demo.DemoHandler.Server, new SecurityPolicy { ReadOnly = true });
+
     public ResolvedContext Context { get; }
     public SecurityPolicy Policy { get; }
     public Uri BaseUri { get; }

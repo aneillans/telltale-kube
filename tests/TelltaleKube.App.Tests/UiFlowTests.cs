@@ -845,6 +845,112 @@ public sealed class UiFlowTests : IDisposable
         window.Close();
     }
 
+    [AvaloniaFact]
+    public async Task Demo_cluster_opens_from_the_empty_home_screen_and_stays_read_only()
+    {
+        var (window, main) = await StartAsync(1280, 800);
+        main.Home.Refresh();
+        await Pump();
+        Assert.True(main.Home.IsEmpty);
+        Snap(window, "28-demo-home");
+
+        // A real click, so this fails if anything on the home screen covers the button.
+        var button = window.GetVisualDescendants().OfType<Button>().Single(b => b.Content as string == "Try the demo cluster");
+        var centre = Avalonia.VisualExtensions.TranslatePoint(button, new Avalonia.Point(button.Bounds.Width / 2, button.Bounds.Height / 2), window)!.Value;
+        window.MouseDown(centre, Avalonia.Input.MouseButton.Left);
+        window.MouseUp(centre, Avalonia.Input.MouseButton.Left);
+
+        await WaitFor(() => main.CurrentPage is ClusterViewModel { Content: OverviewViewModel { IsLoading: false, Tiles.Count: > 0 } });
+        var cluster = Assert.IsType<ClusterViewModel>(main.CurrentPage);
+        Assert.Null(cluster.Error);
+        Assert.Equal("Demo cluster", cluster.Title);
+        Assert.Equal("v1.34.1", cluster.ServerVersion);
+        Assert.Equal("shop", cluster.SelectedNamespace);
+        Assert.True(cluster.IsReadOnly);
+        Assert.False(cluster.CanMutate);
+        Assert.Empty(main.State.Data.Clusters);
+        Snap(window, "29-demo-overview");
+
+        cluster.SelectedNav = cluster.NavEntries.First(n => n.Kind == ResourceKinds.Pods);
+        var pods = Assert.IsType<ResourceListViewModel>(cluster.Content);
+        await WaitFor(() => pods.Rows.Count == 6);
+        Assert.Equal(Health.Error, pods.Rows.Single(r => r.Name.StartsWith("worker", StringComparison.Ordinal)).Health);
+
+        pods.Selected = pods.Rows.First(r => r.Name.StartsWith("web", StringComparison.Ordinal));
+        await WaitFor(() => cluster.Detail is not null);
+        Assert.False(cluster.Detail!.CanExec);
+        Assert.False(cluster.Detail.CanPortForward);
+        Assert.False(cluster.Detail.CanMutate);
+        await Pump();
+        Snap(window, "30-demo-pod-detail");
+
+        cluster.Detail.OpenLogsCommand.Execute(null);
+        var logs = Assert.IsType<LogsViewModel>(main.CurrentPage);
+        await WaitFor(() => logs.Lines.Count > 0);
+        Assert.Contains(logs.Lines, l => l.Text.Contains("listening on", StringComparison.Ordinal));
+        await main.GoBack();
+
+        cluster.SelectedNav = cluster.NavEntries.First(n => n.Kind == ResourceKinds.Deployments);
+        var deployments = Assert.IsType<ResourceListViewModel>(cluster.Content);
+        await WaitFor(() => deployments.Rows.Count == 3);
+
+        cluster.SelectedNav = cluster.NavEntries.First(n => n.Kind == ResourceKinds.Nodes);
+        var nodes = Assert.IsType<ResourceListViewModel>(cluster.Content);
+        await WaitFor(() => nodes.Rows.Count == 4);
+        Assert.Null(cluster.Error);
+        window.Close();
+    }
+
+    /// <summary>Renders the Google Play phone screenshots from the demo cluster (FLAG_SECURE blocks capturing them on a device).</summary>
+    [AvaloniaFact]
+    public async Task Store_screenshots_render_at_phone_resolution()
+    {
+        const double Scale = 2.5; // 432x768 logical is a typical phone width and renders at 1080x1920
+        var (window, main) = await StartAsync(432, 768);
+        Assert.True(main.IsCompact);
+
+        var dir = Path.Combine(ScreenshotDir, "play");
+        Directory.CreateDirectory(dir);
+        void Shot(string name)
+        {
+            Dispatcher.UIThread.RunJobs();
+            using var bitmap = new Avalonia.Media.Imaging.RenderTargetBitmap(new Avalonia.PixelSize(1080, 1920), new Avalonia.Vector(96 * Scale, 96 * Scale));
+            bitmap.Render(window);
+            bitmap.Save(Path.Combine(dir, name + ".png"), new Avalonia.Media.Imaging.PngBitmapEncoderOptions());
+            Assert.Equal(new Avalonia.PixelSize(1080, 1920), bitmap.PixelSize);
+        }
+
+        await main.Home.TryDemoCommand.ExecuteAsync(null);
+        var cluster = Assert.IsType<ClusterViewModel>(main.CurrentPage);
+        await WaitFor(() => cluster.Content is OverviewViewModel { IsLoading: false, Tiles.Count: > 0 });
+        await Task.Delay(500);
+        await Pump();
+        Shot("1-overview");
+
+        cluster.SelectedNav = cluster.NavEntries.First(n => n.Kind == ResourceKinds.Pods);
+        var pods = Assert.IsType<ResourceListViewModel>(cluster.Content);
+        await WaitFor(() => pods.Rows.Count == 6);
+        Shot("2-pods");
+
+        pods.Filter = "restarts:>3";
+        await WaitFor(() => pods.Rows.Count == 1);
+        Shot("3-filter");
+        pods.Filter = "";
+        await WaitFor(() => pods.Rows.Count == 6);
+
+        pods.Selected = pods.Rows.Single(r => r.Name.StartsWith("worker", StringComparison.Ordinal));
+        await WaitFor(() => cluster.Detail is not null);
+        await Task.Delay(300);
+        await Pump();
+        Shot("4-pod-detail");
+
+        cluster.Detail!.OpenLogsCommand.Execute(null);
+        var logs = Assert.IsType<LogsViewModel>(main.CurrentPage);
+        await WaitFor(() => logs.Lines.Count > 0);
+        Shot("5-logs");
+        window.Close();
+    }
+
     private static async Task<(Window, MainViewModel)> StartAsync(double width, double height)
     {
         var state = new AppState(new SecretVault(Directory.CreateTempSubdirectory("telltale-kube-ui").FullName, new EphemeralKeyProtector()));

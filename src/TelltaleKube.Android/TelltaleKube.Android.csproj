@@ -5,7 +5,7 @@
     <!-- Android 11+: required for BiometricPrompt with device-credential fallback and scoped storage. -->
     <SupportedOSPlatformVersion>30</SupportedOSPlatformVersion>
     <RootNamespace>TelltaleKube.Android</RootNamespace>
-    <ApplicationId>uk.co.neillans.telltalekube</ApplicationId>
+    <ApplicationId>uk.co.neillans.telltale</ApplicationId>
     <ApplicationTitle>Telltale Kube</ApplicationTitle>
     <!-- versionCode is a monotonically increasing integer supplied by CI (github.run_number). -->
     <ApplicationVersion Condition="'$(ApplicationVersion)' == ''">1</ApplicationVersion>
@@ -30,14 +30,7 @@
     <AndroidEnableProfiledAot>true</AndroidEnableProfiledAot>
   </PropertyGroup>
 
-  <!-- Release signing: values come from CI secrets (never committed). -->
-  <PropertyGroup Condition="'$(TELLTALE_KUBE_ANDROID_KEYSTORE)' != ''">
-    <AndroidKeyStore>true</AndroidKeyStore>
-    <AndroidSigningKeyStore>$(TELLTALE_KUBE_ANDROID_KEYSTORE)</AndroidSigningKeyStore>
-    <AndroidSigningKeyAlias>$(TELLTALE_KUBE_ANDROID_KEY_ALIAS)</AndroidSigningKeyAlias>
-    <AndroidSigningStorePass>env:TELLTALE_KUBE_ANDROID_STORE_PASS</AndroidSigningStorePass>
-    <AndroidSigningKeyPass>env:TELLTALE_KUBE_ANDROID_KEY_PASS</AndroidSigningKeyPass>
-  </PropertyGroup>
+  <!-- Release signing is passed in by CI (dotnet-android template); nothing is committed here. -->
 
   <ItemGroup>
     <PackageReference Include="Avalonia.Android" />

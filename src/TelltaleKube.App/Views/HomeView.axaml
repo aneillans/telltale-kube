@@ -24,9 +24,10 @@
         <TextBlock Classes="h1" HorizontalAlignment="Center" Text="Welcome to Telltale Kube" />
         <TextBlock Classes="muted" TextWrapping="Wrap" TextAlignment="Center"
                    Text="Import a kubeconfig to get started. Credentials are encrypted on this device with a key held by the operating system's secure store, and never leave it." />
+        <Button HorizontalAlignment="Center" Command="{Binding TryDemoCommand}" Content="Try the demo cluster" />
       </StackPanel>
 
-      <ScrollViewer>
+      <ScrollViewer IsVisible="{Binding !IsEmpty}">
         <ItemsControl ItemsSource="{Binding FilteredClusters}">
           <ItemsControl.ItemsPanel>
             <ItemsPanelTemplate><WrapPanel Orientation="Horizontal" /></ItemsPanelTemplate>
