@@ -1,0 +1,32 @@
+name: Publish Release
+run-name: Publish ${{ startsWith(inputs.version, 'v') && inputs.version || format('v{0}', inputs.version) }}
+
+# Publishes a draft release after its downloads have been tested.
+# This is what makes it visible to the in-app updater.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version to publish, e.g. v1.5.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency: release
+
+jobs:
+  publish:
+    permissions:
+      contents: write
+      packages: read
+    uses: aneillans/github-templates/.github/workflows/release-publish.yml@v1
+    with:
+      version: ${{ inputs.version }}
+      required_assets: |
+        linux-x64.AppImage
+        linux-arm64.AppImage
+        android.apk
+        android.aab

@@ -92,6 +92,9 @@ public sealed partial class HomeViewModel : PageViewModel
     }
 
     [RelayCommand]
+    private Task TryDemo() => Connect(new ClusterCardViewModel(ClusterEntry.CreateDemo()));
+
+    [RelayCommand]
     private async Task Remove(ClusterCardViewModel? card)
     {
         if (card is null || card.IsFromSystem) return;

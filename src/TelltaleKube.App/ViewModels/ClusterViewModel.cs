@@ -171,7 +171,7 @@ public sealed partial class ClusterViewModel : PageViewModel
                 AllowExecPlugins = Platform.Current.IsDesktop,
                 AllowBasicAuth = Main.State.Settings.AllowBasicAuth,
             };
-            Client = new KubeClient(Entry.Config.Resolve(Entry.ContextName), policy, Main.ExecApprover);
+            Client = Entry.Source == ClusterSource.Demo ? KubeClient.CreateDemo() : new KubeClient(Entry.Config.Resolve(Entry.ContextName), policy, Main.ExecApprover);
             Stats = new StatsCollector(Client);
             OnPropertyChanged(nameof(IsReadOnly));
             OnPropertyChanged(nameof(CanMutate));

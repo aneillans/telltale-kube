@@ -1,0 +1,40 @@
+name: Release
+run-name: Release ${{ inputs.version == '' && 'next version' || startsWith(inputs.version, 'v') && inputs.version || format('v{0}', inputs.version) }}${{ inputs.force && ' (force)' || '' }}
+
+# Cuts a draft release: tag, notes, and files built and attached at the tag.
+# Then test the downloads and run Publish Release. The in-app updater only sees published releases.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Version, e.g. v1.5.0 (blank = computed from PRs since the last tag)
+        required: false
+        type: string
+      ref:
+        description: Branch, tag (e.g. v1.5.0) or SHA (blank = main, or the tagged commit when re-cutting)
+        required: false
+        type: string
+      force:
+        description: Re-cut an existing version. Needs version; the tag only moves if ref is set
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency: release
+
+jobs:
+  cut:
+    permissions:
+      contents: write
+      actions: write
+      packages: read
+      pull-requests: read
+    uses: aneillans/github-templates/.github/workflows/release-cut.yml@v1
+    with:
+      version: ${{ inputs.version }}
+      ref: ${{ inputs.ref }}
+      force: ${{ inputs.force }}

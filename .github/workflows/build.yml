@@ -1,0 +1,108 @@
+name: Build
+run-name: ${{ github.ref_type == 'tag' && format('Build {0}', github.ref_name) || github.event.pull_request.title || github.event.head_commit.message || format('Build {0}', github.ref_name) }}
+
+# Tests, then builds every platform as workflow artifacts. Release dispatches this on the tag, which
+# stamps the builds with the version exactly, signs Android and attaches the files to the draft.
+# Renaming this file restarts github.run_number, Android's versionCode, and Play refuses a repeat.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Build & test
+    permissions:
+      contents: read
+      checks: write
+      pull-requests: write
+    uses: aneillans/github-templates/.github/workflows/dotnet-ci.yml@v1
+    with:
+      project: TelltaleKube.Portable.slnf
+      global_json_file: global.json
+      test_projects: |
+        tests/TelltaleKube.Core.Tests
+        tests/TelltaleKube.App.Tests
+      verify_format: true
+      audit_vulnerable: true
+      upload_artifact_name: ui-screenshots
+      upload_artifact_path: tests/TelltaleKube.App.Tests/bin/Release/net11.0/screenshots/
+      harden_runner: true
+
+  version:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      version: ${{ steps.version.outputs.stamp }}
+    steps:
+      - name: Compute version (PR branches and titles, commit messages)
+        id: version
+        uses: aneillans/github-templates/actions/next-version@v1
+        with:
+          # a PR's merge commit belongs to no PR, so version from its head; empty on other events
+          sha: ${{ github.event.pull_request.head.sha }}
+
+  appimage:
+    needs: [test, version]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runtime: linux-x64,   runner: ubuntu-24.04 }
+          - { runtime: linux-arm64, runner: ubuntu-24.04-arm }
+    uses: aneillans/github-templates/.github/workflows/dotnet-appimage.yml@v1
+    with:
+      project: src/TelltaleKube.Desktop
+      runtime: ${{ matrix.runtime }}
+      runner: ${{ matrix.runner }}
+      version: ${{ needs.version.outputs.version }}
+      pack_id: TelltaleKube
+      main_exe: TelltaleKube
+      title: Telltale Kube
+      authors: Telltale Kube contributors
+      icon: packaging/linux/telltale-kube.png
+      categories: Development
+      max_size_mb: 60
+      tarball: true
+      global_json_file: global.json
+      harden_runner: true
+
+  android:
+    needs: [test, version]
+    uses: aneillans/github-templates/.github/workflows/dotnet-android.yml@v1
+    with:
+      project: src/TelltaleKube.Android
+      version: ${{ needs.version.outputs.version }}
+      version_code: ${{ github.run_number }}
+      package_name: TelltaleKube
+      sign: ${{ github.ref_type == 'tag' }}
+      environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
+      global_json_file: global.json
+      harden_runner: true
+    secrets: inherit
+
+  release:
+    name: Attach to draft release
+    needs: [appimage, android]
+    if: github.ref_type == 'tag'
+    strategy:
+      matrix:
+        artifact_pattern: [appimage-*, android-*]
+    permissions:
+      contents: write
+    uses: aneillans/github-templates/.github/workflows/release-upload-assets.yml@v1
+    with:
+      tag: ${{ github.ref_name }}
+      artifact_pattern: ${{ matrix.artifact_pattern }}
+      harden_runner: true
