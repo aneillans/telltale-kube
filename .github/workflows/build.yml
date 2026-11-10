@@ -84,7 +84,7 @@ jobs:
     with:
       project: src/TelltaleKube.Android
       version: ${{ needs.version.outputs.version }}
-      version_code: ${{ github.run_number }}
+      version_code: ${{ fromJSON(github.run_number) }}
       package_name: TelltaleKube
       sign: ${{ github.ref_type == 'tag' }}
       environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
