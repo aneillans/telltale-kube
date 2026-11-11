@@ -28,5 +28,9 @@ jobs:
       required_assets: |
         linux-x64.AppImage
         linux-arm64.AppImage
+        win-x64-Setup.exe
+        win-x64-Portable.zip
+        win-arm64-Setup.exe
+        win-arm64-Portable.zip
         android.apk
         android.aab

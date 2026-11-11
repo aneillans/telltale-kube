@@ -78,13 +78,35 @@ jobs:
       global_json_file: global.json
       harden_runner: true
 
+  windows:
+    needs: [test, version]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runtime: win-x64,   runner: windows-2025 }
+          - { runtime: win-arm64, runner: windows-11-arm }
+    uses: aneillans/github-templates/.github/workflows/dotnet-windows.yml@v1
+    with:
+      project: src/TelltaleKube.Desktop
+      runtime: ${{ matrix.runtime }}
+      runner: ${{ matrix.runner }}
+      version: ${{ needs.version.outputs.version }}
+      pack_id: TelltaleKube
+      main_exe: TelltaleKube.exe
+      title: Telltale Kube
+      authors: Telltale Kube contributors
+      icon: src/TelltaleKube.App/Assets/telltale-kube.ico
+      max_size_mb: 60
+      global_json_file: global.json
+
   android:
     needs: [test, version]
     uses: aneillans/github-templates/.github/workflows/dotnet-android.yml@v1
     with:
-      project: src/TelltaleKube.Android
+      project: src/TelltaleKube.Android/TelltaleKube.Android.csproj
       version: ${{ needs.version.outputs.version }}
-      version_code: ${{ fromJSON(github.run_number) }}
+      version_code: ${{ github.run_number }}
       package_name: TelltaleKube
       sign: ${{ github.ref_type == 'tag' }}
       environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
@@ -94,11 +116,11 @@ jobs:
 
   release:
     name: Attach to draft release
-    needs: [appimage, android]
+    needs: [appimage, windows, android]
     if: github.ref_type == 'tag'
     strategy:
       matrix:
-        artifact_pattern: [appimage-*, android-*]
+        artifact_pattern: [appimage-*, windows-*, android-*]
     permissions:
       contents: write
     uses: aneillans/github-templates/.github/workflows/release-upload-assets.yml@v1
