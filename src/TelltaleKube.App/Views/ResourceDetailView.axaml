@@ -74,6 +74,8 @@
           <Button Content="Copy name" Command="{Binding CopyNameCommand}" />
           <Button Content="Refresh" Command="{Binding RefreshCommand}" />
           <Button Classes="danger" Content="Delete" Command="{Binding DeleteCommand}" IsVisible="{Binding CanMutate}" />
+          <Button Classes="danger" Content="Force delete…" Command="{Binding ForceDeleteCommand}" IsVisible="{Binding CanForceDelete}"
+                  ToolTip.Tip="For objects stuck terminating: skip the grace period, optionally remove finalizers" />
         </WrapPanel>
         <ProgressBar IsIndeterminate="True" IsVisible="{Binding IsBusy}" />
       </StackPanel>
