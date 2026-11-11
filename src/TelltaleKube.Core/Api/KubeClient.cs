@@ -134,6 +134,35 @@ public sealed class KubeClient : IDisposable
     public Task DeleteAsync(ResourceKind kind, string? ns, string name, CancellationToken ct = default) =>
         SendAsync(HttpMethod.Delete, kind.ItemPath(ns, name), new JsonObject { ["kind"] = "DeleteOptions", ["apiVersion"] = "v1", ["propagationPolicy"] = "Background" }, null, ct);
 
+    /// <summary>Deletes with no grace period, like <c>kubectl delete --force --grace-period=0</c>.</summary>
+    public Task ForceDeleteAsync(ResourceKind kind, string? ns, string name, CancellationToken ct = default) =>
+        SendAsync(HttpMethod.Delete, kind.ItemPath(ns, name), new JsonObject { ["kind"] = "DeleteOptions", ["apiVersion"] = "v1", ["propagationPolicy"] = "Background", ["gracePeriodSeconds"] = 0 }, null, ct);
+
+    /// <summary>
+    /// Clears metadata.finalizers and, for a namespace, spec.finalizers through the finalize subresource. This skips
+    /// the cleanup the finalizers were guarding. An object already gone counts as done.
+    /// </summary>
+    public async Task RemoveFinalizersAsync(ResourceKind kind, string? ns, string name, CancellationToken ct = default)
+    {
+        try
+        {
+            var current = await GetAsync(kind, ns, name, ct).ConfigureAwait(false);
+            if (kind.Key == "namespaces" && current["spec.finalizers"] is JsonArray { Count: > 0 })
+            {
+                var body = current.Json.DeepClone().AsObject();
+                body["spec"]!["finalizers"] = new JsonArray();
+                await SendAsync(HttpMethod.Put, kind.ItemPath(null, name) + "/finalize", body, null, ct).ConfigureAwait(false);
+            }
+            if (current["metadata.finalizers"] is JsonArray { Count: > 0 })
+            {
+                await MergePatchAsync(kind, ns, name, new JsonObject { ["metadata"] = new JsonObject { ["finalizers"] = null } }, ct).ConfigureAwait(false);
+            }
+        }
+        catch (KubeApiException ex) when (ex.Status == HttpStatusCode.NotFound)
+        {
+        }
+    }
+
     /// <summary>Replaces an object (PUT). resourceVersion in the body gives optimistic concurrency.</summary>
     public async Task<KubeObject> ReplaceAsync(ResourceKind kind, JsonObject body, CancellationToken ct = default)
     {

@@ -1,3 +1,4 @@
+using System.Text.Json.Nodes;
 using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
@@ -813,6 +814,55 @@ public sealed class UiFlowTests : IDisposable
         main.Dialog!.ChooseCommand.Execute(main.Dialog.Buttons.Single(b => b.Result == "ok"));
         await delete;
         Assert.Contains(_server.Requests, r => r.StartsWith("DELETE /api/v1/namespaces/shop/pods/", StringComparison.Ordinal));
+        window.Close();
+    }
+
+    [AvaloniaFact]
+    public async Task Force_delete_only_shows_when_terminating_and_needs_the_name_typed()
+    {
+        var (window, main) = await StartAsync(1280, 800);
+        await main.State.ImportAsync(_server.Kubeconfig(), ["fake"], readOnly: false);
+        main.Home.Refresh();
+        await main.Home.ConnectCommand.ExecuteAsync(main.Home.Clusters[0]);
+        var cluster = (ClusterViewModel)main.CurrentPage;
+        await WaitFor(() => cluster.ServerVersion.Length > 0);
+        cluster.SelectedNav = cluster.NavEntries.First(n => n.Kind == ResourceKinds.Pods);
+        var list = (ResourceListViewModel)cluster.Content!;
+        await WaitFor(() => list.Rows.Count == 4);
+        list.Selected = list.Rows[0];
+        await WaitFor(() => cluster.Detail is not null);
+        var detail = cluster.Detail!;
+        Assert.False(detail.CanForceDelete);
+
+        // What a watch delivers once a delete is stuck behind a finalizer.
+        var stuck = detail.Object.Json.DeepClone().AsObject();
+        stuck["metadata"]!["resourceVersion"] = "2";
+        stuck["metadata"]!["deletionTimestamp"] = "2026-01-01T00:00:00Z";
+        stuck["metadata"]!["finalizers"] = new JsonArray("example.com/cleanup");
+        detail.UpdateObject(new KubeObject(stuck));
+        Assert.True(detail.CanForceDelete);
+        var name = detail.Object.Name;
+
+        var force = detail.ForceDeleteCommand.ExecuteAsync(null);
+        await WaitFor(() => main.Dialog is not null);
+        Snap(window, "31-force-delete");
+        var dialog = main.Dialog!;
+        Assert.Equal(["cancel", "force", "finalizers"], dialog.Buttons.Select(b => b.Result));
+        Assert.Contains("example.com/cleanup", dialog.Detail, StringComparison.Ordinal);
+        var removeFinalizers = dialog.Buttons.Single(b => b.Result == "finalizers");
+        Assert.False(dialog.ChooseCommand.CanExecute(removeFinalizers));
+        dialog.Cancel();
+        await force;
+        Assert.DoesNotContain(_server.Requests, r => r.StartsWith("DELETE", StringComparison.Ordinal));
+
+        force = detail.ForceDeleteCommand.ExecuteAsync(null);
+        await WaitFor(() => main.Dialog is not null);
+        dialog = main.Dialog!;
+        dialog.TypedText = name;
+        dialog.ChooseCommand.Execute(dialog.Buttons.Single(b => b.Result == "finalizers"));
+        await force;
+        Assert.Contains(_server.Requests, r => r == $"DELETE /api/v1/namespaces/shop/pods/{name}");
+        Assert.Null(cluster.Detail);
         window.Close();
     }
 

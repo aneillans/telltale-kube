@@ -152,6 +152,7 @@ public sealed partial class ResourceDetailViewModel : ViewModelBase
     public bool IsCordoned => Object.GetString("spec.unschedulable") == "true";
     public bool CanExec => CanMutate && IsPod && Object.GetString("status.phase") == "Running";
     public bool CanPortForward => CanMutate && IsPod && Platform.Current.IsDesktop;
+    public bool CanForceDelete => CanMutate && Object.IsTerminating;
 
     public void UpdateObject(KubeObject live)
     {
@@ -198,6 +199,7 @@ public sealed partial class ResourceDetailViewModel : ViewModelBase
         OnPropertyChanged(nameof(HasData));
         OnPropertyChanged(nameof(IsCordoned));
         OnPropertyChanged(nameof(CanExec));
+        OnPropertyChanged(nameof(CanForceDelete));
         if (IsPod)
         {
             var specs = ContainerSpecFields
@@ -429,6 +431,37 @@ public sealed partial class ResourceDetailViewModel : ViewModelBase
             return;
         }
         await Run(() => Client.DeleteAsync(Kind, Object.Namespace, Object.Name), $"Deleting {Object.Name}");
+        _cluster.Detail = null;
+    }
+
+    [RelayCommand]
+    private async Task ForceDelete()
+    {
+        var finalizers = (Object["metadata.finalizers"] as JsonArray ?? [])
+            .Concat(Kind.Key == "namespaces" ? Object["spec.finalizers"] as JsonArray ?? [] : [])
+            .Select(f => f?.ToString())
+            .OfType<string>()
+            .ToList();
+        var message = $"'{Object.Name}' is stuck terminating. Force delete removes it without waiting for a grace period. A pod's containers may keep running on its node.";
+        var buttons = new List<DialogButton> { new("Cancel", "cancel"), new("Force delete", "force", IsDestructive: true) };
+        if (finalizers.Count > 0)
+        {
+            message += " Removing finalizers skips the cleanup they guard and can leave external resources, such as volumes or load balancers, behind.";
+            buttons.Add(new("Force delete and remove finalizers", "finalizers", IsDestructive: true));
+        }
+        var dialog = new DialogViewModel($"Force delete {Kind.Kind}", message, [.. buttons])
+        {
+            Detail = finalizers.Count > 0 ? "Finalizers:\n" + string.Join('\n', finalizers) : null,
+            TypeToConfirm = Object.Name,
+        };
+        var result = await Main.ShowAsync(dialog);
+        if (result is not ("force" or "finalizers")) return;
+        var (ns, name) = (Object.Namespace, Object.Name);
+        await Run(async () =>
+        {
+            await Client.ForceDeleteAsync(Kind, ns, name);
+            if (result == "finalizers") await Client.RemoveFinalizersAsync(Kind, ns, name);
+        }, $"Force deleted {name}");
         _cluster.Detail = null;
     }
 

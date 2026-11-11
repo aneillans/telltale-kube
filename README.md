@@ -28,6 +28,8 @@ More screenshots can be found here if you are interested: [docs/SCREENSHOTS.md](
 - Custom resources are discovered automatically and grouped by product in the sidebar (Longhorn, Flux,
   cert-manager, Gateway API and so on).
 - Resource details show health, conditions, containers, labels, annotations, owner chain, events and YAML.
+- Objects stuck terminating get a Force delete action: no grace period, and optionally remove the finalizers
+  holding them (namespaces use the finalize subresource).
 - 
 ### Lists
 - Click a header to sort. Numbers, ages, quantities (`10Gi`), percentages and ready ratios (`2/3`) sort as values.
@@ -55,7 +57,7 @@ I have given thought to security too when this was built.
 | Credentials at rest | Device secure storage used |
 | TLS | TLS 1.2+ only. The cluster CA is pinned and system roots are not consulted. `insecure-skip-tls-verify` is refused unless allowed per cluster |
 | Malicious kubeconfigs | Exec credential plugins need approval of the exact command line (fingerprinted), never run through a shell, and are disabled on mobile |
-| Accidental changes | Per-cluster read-only mode enforced in the HTTP pipeline. Cluster-scoped deletes need the name typed back. Scale to zero needs confirmation |
+| Accidental changes | Per-cluster read-only mode enforced in the HTTP pipeline. Cluster-scoped deletes and every force delete need the name typed back. Force delete only appears on objects already terminating. Scale to zero needs confirmation |
 | Secrets in the UI | Masked until revealed. Reveal needs biometrics on mobile. Copied secrets clear from the clipboard after 45 s |
 | Lost device | Auto-lock with biometrics or passcode, privacy screen in the app switcher, Android `FLAG_SECURE`, vault excluded from backups |
 | Privacy | No telemetry or accounts. The only network calls are to your clusters and the opt-in update check |

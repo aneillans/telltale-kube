@@ -77,6 +77,7 @@ public class ApiTests
 
         await Assert.ThrowsAsync<SecurityPolicyException>(() => client.DeleteAsync(ResourceKinds.Pods, "default", "x", TestContext.Current.CancellationToken));
         await Assert.ThrowsAsync<SecurityPolicyException>(() => client.ScaleAsync(ResourceKinds.Deployments, "default", "x", 3, TestContext.Current.CancellationToken));
+        await Assert.ThrowsAsync<SecurityPolicyException>(() => client.ForceDeleteAsync(ResourceKinds.Pods, "default", "x", TestContext.Current.CancellationToken));
         Assert.Equal(0, sent);
 
         await client.ListAsync(ResourceKinds.Pods, "default", ct: TestContext.Current.CancellationToken);
@@ -101,6 +102,99 @@ public class ApiTests
         Assert.Equal("/apis/apps/v1/namespaces/shop/deployments/web/scale", captured.RequestUri!.AbsolutePath);
         Assert.Equal("application/merge-patch+json", captured.Content!.Headers.ContentType!.MediaType);
         Assert.Equal(5, JsonNode.Parse(content!)!["spec"]!["replicas"]!.GetValue<int>());
+    }
+
+    [Fact]
+    public async Task Force_delete_sends_zero_grace_period()
+    {
+        HttpRequestMessage? captured = null;
+        string? content = null;
+        using var client = new KubeClient(new FakeHandler(req =>
+        {
+            captured = req;
+            content = req.Content!.ReadAsStringAsync().GetAwaiter().GetResult();
+            return Json("{}");
+        }), Base);
+
+        await client.ForceDeleteAsync(ResourceKinds.Pods, "shop", "web", TestContext.Current.CancellationToken);
+
+        Assert.Equal(HttpMethod.Delete, captured!.Method);
+        Assert.Equal("/api/v1/namespaces/shop/pods/web", captured.RequestUri!.AbsolutePath);
+        var body = JsonNode.Parse(content!)!;
+        Assert.Equal(0, body["gracePeriodSeconds"]!.GetValue<int>());
+        Assert.Equal("Background", body["propagationPolicy"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task Remove_finalizers_merge_patches_metadata_finalizers_to_null()
+    {
+        var sent = new List<(HttpMethod Method, string Path, string? Type, string? Body)>();
+        using var client = new KubeClient(new FakeHandler(req =>
+        {
+            sent.Add((req.Method, req.RequestUri!.AbsolutePath, req.Content?.Headers.ContentType?.MediaType, req.Content?.ReadAsStringAsync().GetAwaiter().GetResult()));
+            return Json("""{"metadata":{"name":"data","namespace":"shop","finalizers":["kubernetes.io/pvc-protection"]}}""");
+        }), Base);
+
+        await client.RemoveFinalizersAsync(ResourceKinds.Pvcs, "shop", "data", TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, sent.Count);
+        Assert.Equal(HttpMethod.Get, sent[0].Method);
+        Assert.Equal(HttpMethod.Patch, sent[1].Method);
+        Assert.Equal("/api/v1/namespaces/shop/persistentvolumeclaims/data", sent[1].Path);
+        Assert.Equal("application/merge-patch+json", sent[1].Type);
+        var finalizers = JsonNode.Parse(sent[1].Body!)!["metadata"]!.AsObject();
+        Assert.True(finalizers.ContainsKey("finalizers"));
+        Assert.Null(finalizers["finalizers"]);
+    }
+
+    [Fact]
+    public async Task Remove_finalizers_on_a_namespace_uses_the_finalize_subresource()
+    {
+        var sent = new List<(HttpMethod Method, string Path, string? Body)>();
+        using var client = new KubeClient(new FakeHandler(req =>
+        {
+            sent.Add((req.Method, req.RequestUri!.AbsolutePath, req.Content?.ReadAsStringAsync().GetAwaiter().GetResult()));
+            return Json("""{"apiVersion":"v1","kind":"Namespace","metadata":{"name":"old","resourceVersion":"7"},"spec":{"finalizers":["kubernetes"]}}""");
+        }), Base);
+
+        await client.RemoveFinalizersAsync(ResourceKinds.Namespaces, null, "old", TestContext.Current.CancellationToken);
+
+        Assert.Equal(2, sent.Count);
+        Assert.Equal(HttpMethod.Put, sent[1].Method);
+        Assert.Equal("/api/v1/namespaces/old/finalize", sent[1].Path);
+        var body = JsonNode.Parse(sent[1].Body!)!;
+        Assert.Empty(body["spec"]!["finalizers"]!.AsArray());
+        Assert.Equal("7", body["metadata"]!["resourceVersion"]!.GetValue<string>());
+    }
+
+    [Fact]
+    public async Task Remove_finalizers_treats_an_object_already_gone_as_done()
+    {
+        var sent = 0;
+        using var client = new KubeClient(new FakeHandler(_ =>
+        {
+            sent++;
+            return Json("""{"kind":"Status","message":"not found"}""", HttpStatusCode.NotFound);
+        }), Base);
+
+        await client.RemoveFinalizersAsync(ResourceKinds.Pods, "shop", "gone", TestContext.Current.CancellationToken);
+
+        Assert.Equal(1, sent);
+    }
+
+    [Fact]
+    public async Task Remove_finalizers_sends_nothing_when_there_are_none()
+    {
+        var methods = new List<HttpMethod>();
+        using var client = new KubeClient(new FakeHandler(req =>
+        {
+            methods.Add(req.Method);
+            return Json("""{"metadata":{"name":"web","namespace":"shop"}}""");
+        }), Base);
+
+        await client.RemoveFinalizersAsync(ResourceKinds.Pods, "shop", "web", TestContext.Current.CancellationToken);
+
+        Assert.Equal([HttpMethod.Get], methods);
     }
 
     [Fact]
