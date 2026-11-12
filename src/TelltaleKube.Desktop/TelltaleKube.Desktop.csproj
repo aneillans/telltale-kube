@@ -24,6 +24,12 @@
     <CETCompat>true</CETCompat>
   </PropertyGroup>
 
+  <!-- NativeAOT links with -ld_classic under Xcode 15/16, which rejects an unaligned pointer in the
+       runtime's libSystem.Net.Security.Native.a on x86_64. The current linker accepts it. -->
+  <PropertyGroup Condition="'$(RuntimeIdentifier)' == 'osx-x64'">
+    <UseLdClassicXCodeLinker>false</UseLdClassicXCodeLinker>
+  </PropertyGroup>
+
   <ItemGroup>
     <PackageReference Include="Avalonia.Desktop" />
     <PackageReference Include="Velopack" />

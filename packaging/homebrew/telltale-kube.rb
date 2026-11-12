@@ -6,7 +6,7 @@ cask "telltale-kube" do
   sha256 arm:   "0000000000000000000000000000000000000000000000000000000000000000",
          intel: "0000000000000000000000000000000000000000000000000000000000000000"
 
-  url "https://github.com/aneillans/telltale-kube/releases/download/v#{version}/TelltaleKube-osx-#{arch}-Portable.zip"
+  url "https://github.com/aneillans/telltale-kube/releases/download/v#{version}/TelltaleKube-#{version}-osx-#{arch}-Portable.zip"
   name "Telltale Kube"
   desc "Lightweight, secure Kubernetes cluster management"
   homepage "https://github.com/aneillans/telltale-kube"
