@@ -115,7 +115,7 @@ jobs:
       title: Telltale Kube
       authors: Telltale Kube contributors
       icon: packaging/macos/telltale-kube.icns
-      entitlements: packaging/macos/entitlements.plist
+      entitlements: packaging/macos/telltale-kube.entitlements
       max_size_mb: 60
 
   android:
