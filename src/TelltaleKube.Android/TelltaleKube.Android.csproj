@@ -13,6 +13,10 @@
     <AndroidPackageFormat>apk</AndroidPackageFormat>
     <AndroidUseAapt2>true</AndroidUseAapt2>
     <RuntimeIdentifiers>android-arm64;android-x64</RuntimeIdentifiers>
+    <!-- No lock file: Dependabot can't restore Android projects, so its updates leave a stale lock that
+         fails the locked restore. Versions are still pinned centrally, including transitive ones
+         (Directory.Packages.props). -->
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
