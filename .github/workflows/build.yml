@@ -28,15 +28,13 @@ jobs:
     uses: aneillans/github-templates/.github/workflows/dotnet-ci.yml@v1
     with:
       project: TelltaleKube.Portable.slnf
-      global_json_file: global.json
       test_projects: |
         tests/TelltaleKube.Core.Tests
         tests/TelltaleKube.App.Tests
       verify_format: true
       audit_vulnerable: true
       upload_artifact_name: ui-screenshots
-      upload_artifact_path: tests/TelltaleKube.App.Tests/bin/Release/net11.0/screenshots/
-      harden_runner: true
+      upload_artifact_path: tests/TelltaleKube.App.Tests/bin/**/screenshots/
 
   version:
     runs-on: ubuntu-latest
@@ -75,8 +73,6 @@ jobs:
       categories: Development
       max_size_mb: 60
       tarball: true
-      global_json_file: global.json
-      harden_runner: true
 
   windows:
     needs: [test, version]
@@ -98,7 +94,29 @@ jobs:
       authors: Telltale Kube contributors
       icon: src/TelltaleKube.App/Assets/telltale-kube.ico
       max_size_mb: 60
-      global_json_file: global.json
+
+  macos:
+    needs: [test, version]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { runtime: osx-x64,   runner: macos-15-intel }
+          - { runtime: osx-arm64, runner: macos-15 }
+    uses: aneillans/github-templates/.github/workflows/dotnet-macos.yml@v1
+    with:
+      project: src/TelltaleKube.Desktop
+      runtime: ${{ matrix.runtime }}
+      runner: ${{ matrix.runner }}
+      version: ${{ needs.version.outputs.version }}
+      pack_id: TelltaleKube
+      main_exe: TelltaleKube
+      bundle_id: uk.co.neillans.telltale
+      title: Telltale Kube
+      authors: Telltale Kube contributors
+      icon: packaging/macos/telltale-kube.icns
+      entitlements: packaging/macos/entitlements.plist
+      max_size_mb: 60
 
   android:
     needs: [test, version]
@@ -110,21 +128,19 @@ jobs:
       package_name: TelltaleKube
       sign: ${{ github.ref_type == 'tag' }}
       environment: ${{ github.ref_type == 'tag' && 'release' || '' }}
-      global_json_file: global.json
-      harden_runner: true
     secrets: inherit
 
   release:
     name: Attach to draft release
-    needs: [appimage, windows, android]
+    needs: [appimage, windows, macos, android]
     if: github.ref_type == 'tag'
-    strategy:
-      matrix:
-        artifact_pattern: [appimage-*, windows-*, android-*]
     permissions:
       contents: write
     uses: aneillans/github-templates/.github/workflows/release-upload-assets.yml@v1
     with:
       tag: ${{ github.ref_name }}
-      artifact_pattern: ${{ matrix.artifact_pattern }}
-      harden_runner: true
+      artifact_pattern: |
+        appimage-*
+        windows-*
+        macos-*
+        android-*

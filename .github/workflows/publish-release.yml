@@ -32,5 +32,9 @@ jobs:
         win-x64-Portable.zip
         win-arm64-Setup.exe
         win-arm64-Portable.zip
+        osx-x64-Setup.pkg
+        osx-x64-Portable.zip
+        osx-arm64-Setup.pkg
+        osx-arm64-Portable.zip
         android.apk
         android.aab
