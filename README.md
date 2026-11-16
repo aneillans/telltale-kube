@@ -17,6 +17,31 @@ figure that there might be other people out there like me who would find somethi
 
 More screenshots can be found here if you are interested: [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md).
 
+## Install
+
+<p align="center">
+  <a href="https://github.com/aneillans/telltale-kube/releases/latest"><strong>⬇ Download the latest release</strong></a>
+  <br />
+  <a href="https://github.com/aneillans/telltale-kube/releases/latest"><img src="https://img.shields.io/github/v/release/aneillans/telltale-kube?label=latest" alt="Latest release" /></a>
+</p>
+
+Grab the file for your platform from the [releases page](https://github.com/aneillans/telltale-kube/releases/latest):
+
+| Platform | File |
+|---|---|
+| Windows (x64 / ARM64) | `TelltaleKube-<version>-win-<arch>-Setup.exe`, or `-Portable.zip` if you don't want an installer |
+| macOS (Apple Silicon / Intel) | `TelltaleKube-<version>-osx-<arch>-Setup.pkg`, or `-Portable.zip` |
+| Linux (x64 / ARM64) | `TelltaleKube-<version>-linux-<arch>.AppImage`, or `.tar.gz` |
+| Android | `TelltaleKube-<version>-android.apk` |
+| iPhone / iPad | Not available yet as a download until I get the money to sort dev account again.|
+
+Installed desktop builds check GitHub releases for updates and can apply them in place. You can turn this off in
+Settings.
+
+The Windows and macOS builds aren't code signed yet, so expect a SmartScreen
+warning on Windows ("More info" > "Run anyway") and a Gatekeeper block on macOS (right-click the app > Open, or allow
+it under System Settings > Privacy & Security). On Android you will need to allow installs from unknown sources if you are side loading - or drop me a message and I will invite you to the closed test track (I need to get enough testors onboarded before I can go public with the app 😢).
+
 ## Features
 
 ### Clusters and resources
@@ -60,7 +85,7 @@ I have given thought to security too when this was built.
 | Accidental changes | Per-cluster read-only mode enforced in the HTTP pipeline. Cluster-scoped deletes and every force delete need the name typed back. Force delete only appears on objects already terminating. Scale to zero needs confirmation |
 | Secrets in the UI | Masked until revealed. Reveal needs biometrics on mobile. Copied secrets clear from the clipboard after 45 s |
 | Lost device | Auto-lock with biometrics or passcode, privacy screen in the app switcher, Android `FLAG_SECURE`, vault excluded from backups |
-| Privacy | No telemetry or accounts. The only network calls are to your clusters and the opt-in update check |
+| Privacy | No telemetry or accounts. The only network calls are to your clusters and the desktop update check (on by default, can be turned off in Settings) |
 
 
 ## Build
